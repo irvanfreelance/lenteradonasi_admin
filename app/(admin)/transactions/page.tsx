@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import useSWR from 'swr';
 import { 
   Search, Filter, Download, Receipt, 
-  ExternalLink, CheckCircle, Clock, XCircle, Trash2, Eye
+  ExternalLink, CheckCircle, Clock, XCircle, Trash2, Eye, X
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -314,7 +314,7 @@ export default function TransactionsPage() {
                   <p className="font-black text-slate-800">{selectedTrx.invoice_code}</p>
                 </div>
                 <div className="text-left text-right">
-                    {trx.status === 'PAID' ? 'Lunas' : 'Pending'}
+                    {selectedTrx.status === 'PAID' ? 'Lunas' : 'Pending'}
                 </div>
                 <div className="text-left">
                   <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Donatur</span>
