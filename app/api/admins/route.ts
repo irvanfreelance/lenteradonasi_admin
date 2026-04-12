@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-
 import { z } from 'zod';
 
-const donorSchema = z.object({
+const adminSchema = z.object({
   name: z.string().min(3),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().optional().nullable(),
+  email: z.string().email(),
+  role: z.string().default('ADMIN'),
+  status: z.string().default('ACTIVE'),
 });
 
 export async function GET(req: Request) {
@@ -18,25 +18,21 @@ export async function GET(req: Request) {
 
     let sql = `
       SELECT 
-        d.id, d.name, d.email, d.phone, d.created_at,
-        COALESCE(SUM(i.total_amount), 0) as total_donated,
-        COUNT(i.id) as donation_count,
+        id, name, email, role, status, created_at,
         COUNT(*) OVER() as total_count
-      FROM donors d
-      LEFT JOIN invoices i ON d.id = i.donor_id AND i.status = 'PAID'
+      FROM admins
       WHERE 1=1
     `;
     
     const params: any[] = [];
     
     if (search) {
-      sql += ` AND (d.name ILIKE $${params.length + 1} OR d.email ILIKE $${params.length + 1} OR d.phone ILIKE $${params.length + 1})`;
+      sql += ` AND (name ILIKE $1 OR email ILIKE $1)`;
       params.push(`%${search}%`);
     }
 
     sql += `
-      GROUP BY d.id
-      ORDER BY d.created_at DESC
+      ORDER BY created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     params.push(limit, offset);
@@ -44,7 +40,7 @@ export async function GET(req: Request) {
     const res = await query(sql, params);
     return NextResponse.json(res.rows);
   } catch (error: any) {
-    console.error('API Donors Error:', error);
+    console.error('API Admins Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -52,14 +48,17 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const validated = donorSchema.parse(body);
+    const validated = adminSchema.parse(body);
+    
+    // Default password_hash (Superadmin should change it)
+    const password_hash = '$2a$12$DummyAdminSecret';
     
     const sql = `
-      INSERT INTO donors (name, email, phone)
-      VALUES ($1, $2, $3)
-      RETURNING *
+      INSERT INTO admins (name, email, role, status, password_hash)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, name, email, role, status, created_at
     `;
-    const res = await query(sql, [validated.name, validated.email, validated.phone]);
+    const res = await query(sql, [validated.name, validated.email, validated.role, validated.status, password_hash]);
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -73,7 +72,7 @@ export async function PATCH(req: Request) {
     const { id, ...data } = body;
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const validated = donorSchema.partial().parse(data);
+    const validated = adminSchema.partial().parse(data);
     const entries = Object.entries(validated).filter(([_, v]) => v !== undefined);
     if (entries.length === 0) return NextResponse.json({ error: 'No data to update' }, { status: 400 });
 
@@ -81,7 +80,7 @@ export async function PATCH(req: Request) {
     const params = entries.map(([_, v]) => v);
     params.push(id);
 
-    const sql = `UPDATE donors SET ${setClause} WHERE id = $${params.length} RETURNING *`;
+    const sql = `UPDATE admins SET ${setClause} WHERE id = $${params.length} RETURNING id, name, email, role, status, created_at`;
     const res = await query(sql, params);
 
     return NextResponse.json(res.rows[0]);
@@ -97,10 +96,10 @@ export async function DELETE(req: Request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    await query('DELETE FROM donors WHERE id = $1', [id]);
+    // Prevent deleting self? (Normally handled by auth context, but here simplified)
+    await query('DELETE FROM admins WHERE id = $1', [id]);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

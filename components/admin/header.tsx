@@ -31,7 +31,7 @@ export default function Header({ title }: { title: string }) {
           <div className="flex items-center gap-3 cursor-pointer group">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-bold text-slate-800 leading-none mb-1">Ahmad Fulan</p>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Super Admin</p>
+              <p className="text-[10px] font-semibold text-slate-400">Super admin</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-teal-100 group-hover:text-teal-600 transition-all border border-slate-200">
               <User size={20} />

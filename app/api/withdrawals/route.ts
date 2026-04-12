@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-
 import { z } from 'zod';
 
-const donorSchema = z.object({
-  name: z.string().min(3),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().optional().nullable(),
+const withdrawalSchema = z.object({
+  affiliate_id: z.number(),
+  amount: z.number().positive(),
+  bank_account_info: z.string().min(5),
+  status: z.string().default('PENDING'),
 });
 
 export async function GET(req: Request) {
@@ -15,28 +15,33 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search');
+    const status = searchParams.get('status');
 
     let sql = `
       SELECT 
-        d.id, d.name, d.email, d.phone, d.created_at,
-        COALESCE(SUM(i.total_amount), 0) as total_donated,
-        COUNT(i.id) as donation_count,
+        w.*,
+        a.name as affiliate_name,
+        a.affiliate_code,
         COUNT(*) OVER() as total_count
-      FROM donors d
-      LEFT JOIN invoices i ON d.id = i.donor_id AND i.status = 'PAID'
+      FROM withdrawals w
+      JOIN affiliates a ON w.affiliate_id = a.id
       WHERE 1=1
     `;
     
     const params: any[] = [];
     
     if (search) {
-      sql += ` AND (d.name ILIKE $${params.length + 1} OR d.email ILIKE $${params.length + 1} OR d.phone ILIKE $${params.length + 1})`;
+      sql += ` AND (a.name ILIKE $${params.length + 1} OR a.affiliate_code ILIKE $${params.length + 1})`;
       params.push(`%${search}%`);
     }
 
+    if (status && status !== 'ALL') {
+      sql += ` AND w.status = $${params.length + 1}`;
+      params.push(status);
+    }
+
     sql += `
-      GROUP BY d.id
-      ORDER BY d.created_at DESC
+      ORDER BY w.created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     params.push(limit, offset);
@@ -44,7 +49,7 @@ export async function GET(req: Request) {
     const res = await query(sql, params);
     return NextResponse.json(res.rows);
   } catch (error: any) {
-    console.error('API Donors Error:', error);
+    console.error('API Withdrawals Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -52,14 +57,22 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const validated = donorSchema.parse(body);
+    const validated = withdrawalSchema.parse(body);
     
+    // Check balance
+    const affRes = await query('SELECT balance FROM affiliates WHERE id = $1', [validated.affiliate_id]);
+    if (affRes.rowCount === 0) return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 });
+    
+    if (affRes.rows[0].balance < validated.amount) {
+      return NextResponse.json({ error: 'Insufficient balance' }, { status: 400 });
+    }
+
     const sql = `
-      INSERT INTO donors (name, email, phone)
-      VALUES ($1, $2, $3)
+      INSERT INTO withdrawals (affiliate_id, amount, bank_account_info, status)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
-    const res = await query(sql, [validated.name, validated.email, validated.phone]);
+    const res = await query(sql, [validated.affiliate_id, validated.amount, validated.bank_account_info, validated.status]);
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -73,7 +86,7 @@ export async function PATCH(req: Request) {
     const { id, ...data } = body;
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const validated = donorSchema.partial().parse(data);
+    const validated = withdrawalSchema.partial().parse(data);
     const entries = Object.entries(validated).filter(([_, v]) => v !== undefined);
     if (entries.length === 0) return NextResponse.json({ error: 'No data to update' }, { status: 400 });
 
@@ -81,10 +94,19 @@ export async function PATCH(req: Request) {
     const params = entries.map(([_, v]) => v);
     params.push(id);
 
-    const sql = `UPDATE donors SET ${setClause} WHERE id = $${params.length} RETURNING *`;
-    const res = await query(sql, params);
+    const sql = `UPDATE withdrawals SET ${setClause}, processed_at = CASE WHEN $${params.length-1} = 'PROCESSED' THEN CURRENT_TIMESTAMP ELSE processed_at END WHERE id = $${params.length} RETURNING *`;
+    // Note: status is at index params.length-1 in this logic if status was updated. 
+    // Simplified:
+    const updateRes = await query(`UPDATE withdrawals SET ${setClause} WHERE id = $${params.length} RETURNING *`, params);
 
-    return NextResponse.json(res.rows[0]);
+    // If status became PROCESSED, subtract from balance in a transaction
+    if (validated.status === 'PROCESSED') {
+       const row = updateRes.rows[0];
+       await query('UPDATE affiliates SET balance = balance - $1 WHERE id = $2', [row.amount, row.affiliate_id]);
+       await query('UPDATE withdrawals SET processed_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+    }
+
+    return NextResponse.json(updateRes.rows[0]);
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -97,10 +119,9 @@ export async function DELETE(req: Request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    await query('DELETE FROM donors WHERE id = $1', [id]);
+    await query('DELETE FROM withdrawals WHERE id = $1', [id]);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

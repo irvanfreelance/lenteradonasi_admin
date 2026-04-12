@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-
 import { z } from 'zod';
 
-const donorSchema = z.object({
-  name: z.string().min(3),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().optional().nullable(),
+const templateSchema = z.object({
+  event_trigger: z.string().min(3),
+  channel: z.enum(['WHATSAPP', 'EMAIL', 'SMS']),
+  message_content: z.string().min(10),
+  is_active: z.boolean().default(true),
 });
 
 export async function GET(req: Request) {
@@ -18,25 +18,21 @@ export async function GET(req: Request) {
 
     let sql = `
       SELECT 
-        d.id, d.name, d.email, d.phone, d.created_at,
-        COALESCE(SUM(i.total_amount), 0) as total_donated,
-        COUNT(i.id) as donation_count,
+        *,
         COUNT(*) OVER() as total_count
-      FROM donors d
-      LEFT JOIN invoices i ON d.id = i.donor_id AND i.status = 'PAID'
+      FROM notification_templates
       WHERE 1=1
     `;
     
     const params: any[] = [];
     
     if (search) {
-      sql += ` AND (d.name ILIKE $${params.length + 1} OR d.email ILIKE $${params.length + 1} OR d.phone ILIKE $${params.length + 1})`;
+      sql += ` AND (event_trigger ILIKE $1 OR message_content ILIKE $1)`;
       params.push(`%${search}%`);
     }
 
     sql += `
-      GROUP BY d.id
-      ORDER BY d.created_at DESC
+      ORDER BY event_trigger ASC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     params.push(limit, offset);
@@ -44,7 +40,7 @@ export async function GET(req: Request) {
     const res = await query(sql, params);
     return NextResponse.json(res.rows);
   } catch (error: any) {
-    console.error('API Donors Error:', error);
+    console.error('API Notifications Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -52,14 +48,14 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const validated = donorSchema.parse(body);
+    const validated = templateSchema.parse(body);
     
     const sql = `
-      INSERT INTO donors (name, email, phone)
-      VALUES ($1, $2, $3)
+      INSERT INTO notification_templates (event_trigger, channel, message_content, is_active)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
-    const res = await query(sql, [validated.name, validated.email, validated.phone]);
+    const res = await query(sql, [validated.event_trigger, validated.channel, validated.message_content, validated.is_active]);
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -73,7 +69,7 @@ export async function PATCH(req: Request) {
     const { id, ...data } = body;
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const validated = donorSchema.partial().parse(data);
+    const validated = templateSchema.partial().parse(data);
     const entries = Object.entries(validated).filter(([_, v]) => v !== undefined);
     if (entries.length === 0) return NextResponse.json({ error: 'No data to update' }, { status: 400 });
 
@@ -81,7 +77,7 @@ export async function PATCH(req: Request) {
     const params = entries.map(([_, v]) => v);
     params.push(id);
 
-    const sql = `UPDATE donors SET ${setClause} WHERE id = $${params.length} RETURNING *`;
+    const sql = `UPDATE notification_templates SET ${setClause} WHERE id = $${params.length} RETURNING *`;
     const res = await query(sql, params);
 
     return NextResponse.json(res.rows[0]);
@@ -97,10 +93,9 @@ export async function DELETE(req: Request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    await query('DELETE FROM donors WHERE id = $1', [id]);
+    await query('DELETE FROM notification_templates WHERE id = $1', [id]);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

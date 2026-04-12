@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({
+import { Toaster } from "sonner";
+
+const sourceSans = Source_Sans_3({
   subsets: ["latin"],
-  variable: "--font-jakarta",
+  variable: "--font-source-sans",
 });
 
 export const metadata: Metadata = {
@@ -15,16 +17,22 @@ export const metadata: Metadata = {
   }
 };
 
+import { SWRProvider } from "@/components/providers/swr-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${jakarta.variable} antialiased`}>
-      <body className="bg-slate-50 min-h-screen font-jakarta">
-        {children}
+    <html lang="id" className={`${sourceSans.variable} antialiased`}>
+      <body className="bg-slate-50 min-h-screen font-source-sans text-slate-800">
+        <SWRProvider>
+          {children}
+        </SWRProvider>
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );
 }
+

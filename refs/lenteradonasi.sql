@@ -97,6 +97,7 @@ CREATE TABLE campaigns (
     is_bundle BOOLEAN DEFAULT FALSE,
     has_no_target BOOLEAN DEFAULT FALSE,
     has_no_time_limit BOOLEAN DEFAULT FALSE,
+    sort INT DEFAULT 0,
     
     -- Batasan (Bisa NULL jika has_no_target / has_no_time_limit TRUE)
     target_amount BIGINT, 

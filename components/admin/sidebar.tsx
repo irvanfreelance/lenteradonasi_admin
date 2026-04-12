@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Megaphone, Receipt, Users, Settings, 
-  ChevronLeft, Menu, LogOut, Heart
+  ChevronLeft, Menu, LogOut, Heart, Tags, CreditCard, BellRing,
+  ShieldCheck, History, Wallet
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -17,10 +18,17 @@ function cn(...inputs: ClassValue[]) {
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: Megaphone, label: 'Kampanye', href: '/campaigns' },
+  { icon: Tags, label: 'Kategori', href: '/categories' },
   { icon: Receipt, label: 'Transaksi', href: '/transactions' },
   { icon: Users, label: 'Donatur', href: '/donors' },
+  { icon: Heart, label: 'Afiliasi', href: '/affiliates' },
+  { icon: Wallet, label: 'Penarikan', href: '/withdrawals' },
+  { icon: BellRing, label: 'Notifikasi', href: '/notifications' },
+  { icon: ShieldCheck, label: 'Admin', href: '/admins' },
+  { icon: History, label: 'Log Sistem', href: '/logs' },
   { icon: Settings, label: 'Pengaturan', href: '/settings' },
 ];
+
 
 export default function Sidebar({ isOpen, toggle }: { isOpen: boolean, toggle: () => void }) {
   const pathname = usePathname();

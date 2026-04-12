@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-
 import { z } from 'zod';
 
-const donorSchema = z.object({
+const affiliateSchema = z.object({
+  affiliate_code: z.string().min(3),
   name: z.string().min(3),
-  email: z.string().email().optional().nullable(),
+  email: z.string().email(),
   phone: z.string().optional().nullable(),
+  status: z.string().default('ACTIVE'),
 });
 
 export async function GET(req: Request) {
@@ -18,25 +19,23 @@ export async function GET(req: Request) {
 
     let sql = `
       SELECT 
-        d.id, d.name, d.email, d.phone, d.created_at,
-        COALESCE(SUM(i.total_amount), 0) as total_donated,
-        COUNT(i.id) as donation_count,
+        a.*,
+        (SELECT COUNT(*) FROM transactions t WHERE t.affiliate_id = a.id) as converted_donors,
+        (SELECT COALESCE(SUM(t.total_amount), 0) FROM transactions t WHERE t.affiliate_id = a.id) as raised_amount,
         COUNT(*) OVER() as total_count
-      FROM donors d
-      LEFT JOIN invoices i ON d.id = i.donor_id AND i.status = 'PAID'
+      FROM affiliates a
       WHERE 1=1
     `;
     
     const params: any[] = [];
     
     if (search) {
-      sql += ` AND (d.name ILIKE $${params.length + 1} OR d.email ILIKE $${params.length + 1} OR d.phone ILIKE $${params.length + 1})`;
+      sql += ` AND (a.name ILIKE $1 OR a.affiliate_code ILIKE $1 OR a.email ILIKE $1)`;
       params.push(`%${search}%`);
     }
 
     sql += `
-      GROUP BY d.id
-      ORDER BY d.created_at DESC
+      ORDER BY a.created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     params.push(limit, offset);
@@ -44,7 +43,7 @@ export async function GET(req: Request) {
     const res = await query(sql, params);
     return NextResponse.json(res.rows);
   } catch (error: any) {
-    console.error('API Donors Error:', error);
+    console.error('API Affiliates Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -52,14 +51,17 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const validated = donorSchema.parse(body);
+    const validated = affiliateSchema.parse(body);
+    
+    // Default password_hash for now (needs real auth if implemented)
+    const password_hash = '$2a$12$DummyGeneratedByAdmin'; 
     
     const sql = `
-      INSERT INTO donors (name, email, phone)
-      VALUES ($1, $2, $3)
+      INSERT INTO affiliates (affiliate_code, name, email, phone, status, password_hash)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
-    const res = await query(sql, [validated.name, validated.email, validated.phone]);
+    const res = await query(sql, [validated.affiliate_code, validated.name, validated.email, validated.phone, validated.status, password_hash]);
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -73,7 +75,7 @@ export async function PATCH(req: Request) {
     const { id, ...data } = body;
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const validated = donorSchema.partial().parse(data);
+    const validated = affiliateSchema.partial().parse(data);
     const entries = Object.entries(validated).filter(([_, v]) => v !== undefined);
     if (entries.length === 0) return NextResponse.json({ error: 'No data to update' }, { status: 400 });
 
@@ -81,7 +83,7 @@ export async function PATCH(req: Request) {
     const params = entries.map(([_, v]) => v);
     params.push(id);
 
-    const sql = `UPDATE donors SET ${setClause} WHERE id = $${params.length} RETURNING *`;
+    const sql = `UPDATE affiliates SET ${setClause} WHERE id = $${params.length} RETURNING *`;
     const res = await query(sql, params);
 
     return NextResponse.json(res.rows[0]);
@@ -97,10 +99,9 @@ export async function DELETE(req: Request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    await query('DELETE FROM donors WHERE id = $1', [id]);
+    await query('DELETE FROM affiliates WHERE id = $1', [id]);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
