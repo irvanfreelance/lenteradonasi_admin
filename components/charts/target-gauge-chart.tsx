@@ -25,8 +25,9 @@ export default function TargetGaugeChart({ value, max, color = '#14b8a6' }: { va
             paddingAngle={0}
             dataKey="value"
             stroke="none"
+            cornerRadius={10}
           >
-            <Cell key={`cell-0`} fill={color} cornerRadius={10} />
+            <Cell key={`cell-0`} fill={color} />
             <Cell key={`cell-1`} fill="#f1f5f9" />
           </Pie>
         </PieChart>

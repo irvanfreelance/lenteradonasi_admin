@@ -48,7 +48,7 @@ export default function RevenueLineChart({ data }: { data: DataPoint[] }) {
           />
           <Tooltip 
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-            formatter={(value: number) => [new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value), 'Revenue']}
+            formatter={(value: any) => [new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(value)), 'Revenue']}
           />
           <Area 
             type="monotone" 
