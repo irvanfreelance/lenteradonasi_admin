@@ -4,6 +4,8 @@ import path from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
+dotenv.config({ path: '.env.local' });
+
 
 async function seed() {
   if (!process.env.DATABASE_URL) {

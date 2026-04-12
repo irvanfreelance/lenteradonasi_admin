@@ -5,6 +5,33 @@
 -- Full Features: Zakat, Qurban, Bundling, Affiliate, Ads Tracking, QRIS Statis
 -- =================================================================================
 
+-- 0. CLEANUP (FOR SEEDING)
+DROP TABLE IF EXISTS ads_conversion_logs CASCADE;
+DROP TABLE IF EXISTS notification_logs CASCADE;
+DROP TABLE IF EXISTS payment_logs CASCADE;
+DROP TABLE IF EXISTS notification_templates CASCADE;
+DROP TABLE IF EXISTS transaction_qurban_names CASCADE;
+DROP TABLE IF EXISTS transactions_y2026m10 CASCADE;
+DROP TABLE IF EXISTS transactions CASCADE;
+DROP TABLE IF EXISTS invoices_y2026m10 CASCADE;
+DROP TABLE IF EXISTS invoices CASCADE;
+DROP TABLE IF EXISTS payment_instructions CASCADE;
+DROP TABLE IF EXISTS payment_methods CASCADE;
+DROP TABLE IF EXISTS donors CASCADE;
+DROP TABLE IF EXISTS withdrawals CASCADE;
+DROP TABLE IF EXISTS affiliate_campaign_stats CASCADE;
+DROP TABLE IF EXISTS affiliate_commissions CASCADE;
+DROP TABLE IF EXISTS affiliates CASCADE;
+DROP TABLE IF EXISTS campaign_updates CASCADE;
+DROP TABLE IF EXISTS campaign_stats CASCADE;
+DROP TABLE IF EXISTS campaign_variants CASCADE;
+DROP TABLE IF EXISTS campaign_bundles CASCADE;
+DROP TABLE IF EXISTS campaign_qris_static CASCADE;
+DROP TABLE IF EXISTS campaigns CASCADE;
+DROP TABLE IF EXISTS categories CASCADE;
+DROP TABLE IF EXISTS admins CASCADE;
+DROP TABLE IF EXISTS ngo_configs CASCADE;
+
 -- 1. KONFIGURASI GLOBAL & MANAJEMEN USER (ADMIN)
 CREATE TABLE ngo_configs (
     id BIGSERIAL PRIMARY KEY,
@@ -476,7 +503,7 @@ INSERT INTO transactions (id, invoice_id, invoice_created_at, campaign_id, amoun
 
 -- Transaksi 2: Hamba Allah / Anonim (Camp 5)
 INSERT INTO invoices (id, invoice_code, donor_id, payment_method_id, donor_name_snapshot, is_anonymous, base_amount, admin_fee, total_amount, status, created_at) VALUES 
-(2, 'TRX-9922', NULL, 2, 'Hamba Allah', 500000, 4000, 504000, 'PENDING', '2026-10-12 15:10:00');
+(2, 'TRX-9922', NULL, 2, 'Hamba Allah', TRUE, 500000, 4000, 504000, 'PENDING', '2026-10-12 15:10:00');
 INSERT INTO transactions (id, invoice_id, invoice_created_at, campaign_id, amount, created_at) VALUES 
 (2, 2, '2026-10-12 15:10:00', 5, 500000, '2026-10-12 15:10:00');
 
