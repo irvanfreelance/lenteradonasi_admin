@@ -32,11 +32,29 @@ const campaignSchema = z.object({
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
+    const minimal = searchParams.get('minimal') === 'true';
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
     const categoryId = searchParams.get('category_id');
     const status = searchParams.get('status');
     const search = searchParams.get('search');
+
+    // Lightweight mode: return only id + title for dropdowns/selects
+    if (minimal) {
+      const params: any[] = [];
+      let sql = `SELECT id, title FROM campaigns WHERE 1=1`;
+      if (status && status !== 'ALL') {
+        sql += ` AND status = $${params.length + 1}`;
+        params.push(status);
+      }
+      if (search) {
+        sql += ` AND title ILIKE $${params.length + 1}`;
+        params.push(`%${search}%`);
+      }
+      sql += ` ORDER BY sort ASC, created_at DESC`;
+      const res = await query(sql, params);
+      return NextResponse.json(res.rows);
+    }
 
     let sql = `
       SELECT 

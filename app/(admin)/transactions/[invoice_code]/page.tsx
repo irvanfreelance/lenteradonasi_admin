@@ -27,6 +27,54 @@ const formatDate = (dateStr: string) => {
   });
 };
 
+function LogDetailCard({ log, title, subtitle, status, statusColor, bgColor, borderColor }: any) {
+  const [expanded, setExpanded] = useState(false);
+
+  const formatJson = (str: string) => {
+    try { return JSON.stringify(JSON.parse(str), null, 2); }
+    catch(e) { return str; }
+  };
+
+  return (
+    <div 
+      className={cn("p-3 rounded-xl border text-sm transition-all cursor-pointer hover:shadow-md", bgColor, borderColor)}
+      onClick={() => setExpanded(!expanded)}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-bold text-slate-800 text-xs">{title}</span>
+        {status && (
+          <span className={cn("text-[9px] font-bold uppercase px-2 py-0.5 rounded", statusColor)}>
+            {status}
+          </span>
+        )}
+      </div>
+      <div className="text-slate-600 text-xs mb-1">{subtitle}</div>
+      <p className="mt-2 text-[10px] text-slate-400">{formatDate(log.created_at)}</p>
+
+      {expanded && (
+        <div className="mt-3 pt-3 border-t border-slate-200/50 space-y-2 cursor-text" onClick={e => e.stopPropagation()}>
+          {log.request_payload && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500">Request Payload</span>
+              <pre className="text-[10px] bg-slate-800 text-slate-200 p-3 rounded-xl overflow-x-auto whitespace-pre-wrap break-all max-h-60 overflow-y-auto">
+                {formatJson(log.request_payload)}
+              </pre>
+            </div>
+          )}
+          {log.response_payload && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500">Response Payload</span>
+              <pre className="text-[10px] bg-slate-800 text-slate-200 p-3 rounded-xl overflow-x-auto whitespace-pre-wrap break-all max-h-60 overflow-y-auto">
+                {formatJson(log.response_payload)}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TransactionDetailPage() {
   const { invoice_code } = useParams();
   const router = useRouter();
@@ -175,11 +223,16 @@ export default function TransactionDetailPage() {
             </h3>
             <div className="overflow-y-auto pr-2 space-y-3 flex-1">
                {trx.payment_logs?.length > 0 ? trx.payment_logs.map((log: any) => (
-                  <div key={log.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 font-mono text-xs text-slate-600">
-                     <span className="font-bold text-slate-800 bg-slate-200 px-2 py-0.5 rounded">{log.http_status}</span> 
-                     <span className="ml-2 text-indigo-600 font-semibold">{log.endpoint}</span>
-                     <p className="mt-2 text-[10px] text-slate-400">{formatDate(log.created_at)}</p>
-                  </div>
+                  <LogDetailCard 
+                    key={log.id} 
+                    log={log}
+                    title={log.endpoint}
+                    subtitle={`Tipe: ${log.type || 'Callback'}`}
+                    status={log.http_status}
+                    statusColor="bg-slate-200 text-slate-800"
+                    bgColor="bg-slate-50/50"
+                    borderColor="border-slate-100"
+                  />
                )) : <div className="text-slate-400 italic text-sm text-center py-8">Tidak ada log server to server.</div>}
             </div>
          </div>
@@ -194,17 +247,16 @@ export default function TransactionDetailPage() {
                   let payload = { message: '' };
                   try { payload = JSON.parse(log.request_payload); } catch(e) {}
                   return (
-                     <div key={log.id} className="p-3 bg-orange-50/30 rounded-xl border border-orange-100/50 text-sm">
-                        <div className="flex items-center justify-between mb-2">
-                           <span className="font-bold text-slate-800 text-xs">{log.channel} • {log.recipient}</span>
-                           <span className={cn(
-                              "text-[9px] font-bold uppercase px-2 py-0.5 rounded",
-                              log.status === 'SUCCESS' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                           )}>{log.status}</span>
-                        </div>
-                        <p className="text-slate-600 text-sm line-clamp-2">{payload.message || 'Pesan dikirim...'}</p>
-                        <p className="mt-2 text-[10px] text-slate-400">{formatDate(log.created_at)}</p>
-                     </div>
+                    <LogDetailCard 
+                      key={log.id} 
+                      log={log}
+                      title={`${log.channel} • ${log.recipient}`}
+                      subtitle={<span className="line-clamp-2">{payload.message || 'Pesan dikirim...'}</span>}
+                      status={log.status}
+                      statusColor={log.status === 'SUCCESS' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}
+                      bgColor="bg-orange-50/30"
+                      borderColor="border-orange-100/50"
+                    />
                   );
                }) : <div className="text-slate-400 italic text-sm text-center py-8">Tidak ada log notifikasi terekam.</div>}
             </div>
@@ -217,17 +269,16 @@ export default function TransactionDetailPage() {
             </h3>
             <div className="overflow-y-auto pr-2 space-y-3 flex-1">
                {trx.ads_conversion_logs?.length > 0 ? trx.ads_conversion_logs.map((log: any) => (
-                  <div key={log.id} className="p-3 bg-pink-50/30 rounded-xl border border-pink-100/50 text-sm">
-                     <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-slate-800 text-xs">{log.platform}</span>
-                        <span className={cn(
-                           "text-[9px] font-bold uppercase px-2 py-0.5 rounded",
-                           log.http_status >= 200 && log.http_status < 300 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                        )}>{log.http_status || 'ERR'}</span>
-                     </div>
-                     <p className="font-medium text-pink-600 text-xs mb-1">{log.event_name}</p>
-                     <p className="mt-2 text-[10px] text-slate-400">{formatDate(log.created_at)}</p>
-                  </div>
+                  <LogDetailCard 
+                    key={log.id} 
+                    log={log}
+                    title={log.platform}
+                    subtitle={<span className="font-medium text-pink-600 mb-1">{log.event_name}</span>}
+                    status={log.http_status || 'ERR'}
+                    statusColor={log.http_status >= 200 && log.http_status < 300 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}
+                    bgColor="bg-pink-50/30"
+                    borderColor="border-pink-100/50"
+                  />
                )) : <div className="text-slate-400 italic text-sm text-center py-8">Tidak ada log konversi ads.</div>}
             </div>
          </div>

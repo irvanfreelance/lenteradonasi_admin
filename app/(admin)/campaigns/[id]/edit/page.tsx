@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { NumberInput } from '@/components/ui/number-input';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { FileUpload } from '@/components/ui/file-upload';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -23,6 +24,7 @@ export default function EditCampaignPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<any>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [variants, setVariants] = useState<any[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
@@ -65,9 +67,25 @@ export default function EditCampaignPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      let finalImageUrl = formData.image_url;
+      if (imageFile) {
+        toast('Mengupload gambar ke server...');
+        const fileForm = new FormData();
+        fileForm.append('file', imageFile);
+        
+        const response = await fetch(`/api/upload?filename=${imageFile.name}`, {
+          method: 'POST',
+          body: imageFile,
+        });
+        if (!response.ok) throw new Error('Gagal mengupload gambar');
+        const blobRes = await response.json();
+        finalImageUrl = blobRes.url;
+      }
+
       // 1. Update Core Campaign — parse suggestion_amounts back to array
       const payload = {
         ...formData,
+        image_url: finalImageUrl,
         suggestion_amounts: formData.suggestion_amounts
           ? formData.suggestion_amounts.split(',').map((s: string) => parseInt(s.trim())).filter(Boolean)
           : null,
@@ -260,30 +278,11 @@ export default function EditCampaignPage() {
         <div className="space-y-6">
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
             <h3 className="text-sm font-normal text-slate-800 tracking-tight text-left">Cover Foto</h3>
-            <div className="aspect-video bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 overflow-hidden relative group">
-              {formData.image_url ? (
-                <>
-                  <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, image_url: ''})}
-                    className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur rounded-xl text-rose-500 shadow-xl opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    <X size={16} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <ImageIcon size={32} className="text-slate-300" />
-                  <span className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">No Image</span>
-                </>
-              )}
-            </div>
-            <input 
-              value={formData.image_url || ''} 
-              onChange={(e) => setFormData({...formData, image_url: e.target.value})} 
-              placeholder="URL Gambar..."
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-6 text-xs font-normal text-slate-900 focus:outline-none focus:border-teal-500/50 transition-all" 
+            <FileUpload 
+              value={formData.image_url}
+              onChange={(url) => setFormData({...formData, image_url: url})}
+              deferred
+              onFileSelect={(file) => setImageFile(file)}
             />
           </div>
 

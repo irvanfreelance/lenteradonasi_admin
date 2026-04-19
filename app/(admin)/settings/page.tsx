@@ -28,7 +28,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
 
   // Tabs state
-  const [activeTab, setActiveTab] = useState<'UMUM' | 'NOTIFIKASI' | 'USER'>('UMUM');
+  const [activeTab, setActiveTab] = useState<'UMUM' | 'USER'>('UMUM');
 
   // Templates state
   const { data: templates, mutate: mutateTemplates } = useSWR('/api/notification-templates', fetcher);
@@ -204,15 +204,7 @@ export default function SettingsPage() {
         >
           <SettingsIcon size={18} /> Konfigurasi Umum
         </button>
-        <button
-          onClick={() => setActiveTab('NOTIFIKASI')}
-          className={cn(
-            "flex items-center gap-2 px-8 py-4 text-sm font-bold transition-all rounded-xl",
-            activeTab === 'NOTIFIKASI' ? "bg-orange-50 text-orange-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-          )}
-        >
-          <Bell size={18} /> Template Notifikasi
-        </button>
+
         <button
           onClick={() => setActiveTab('USER')}
           className={cn(
@@ -258,35 +250,6 @@ export default function SettingsPage() {
               {saved ? <Check size={16} /> : <Save size={16} />} {saved ? 'Tersimpan' : saving ? 'Menyimpan...' : 'Simpan perubahan'}
             </Button>
           </div>
-        </div>
-      ) : activeTab === 'NOTIFIKASI' ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 animate-in fade-in duration-300">
-           <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-             <div>
-               <h3 className="font-bold text-slate-800 flex items-center gap-2"><Bell size={18} className="text-orange-500" /> Template Notifikasi</h3>
-               <p className="text-xs text-slate-400 mt-1">Atur pesan WhatsApp/Email untuk donatur</p>
-             </div>
-             <Button onClick={() => handleOpenTemplate()} className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"><Plus size={16} className="mr-2"/> Tambah Template</Button>
-           </div>
-           
-           <div className="p-6">
-             {templates?.map((t: any) => (
-                <div key={t.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 mb-4 text-left">
-                   <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                         <span className="font-bold text-slate-800">{t.event_trigger}</span>
-                         <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-bold uppercase">{t.channel}</span>
-                         {!t.is_active && <span className="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded font-bold uppercase">Nonaktif</span>}
-                      </div>
-                      <div className="flex gap-2">
-                         <button onClick={() => handleOpenTemplate(t)} className="p-1.5 text-slate-400 hover:text-indigo-600 bg-white rounded shadow-sm border border-slate-100"><Edit size={14} /></button>
-                         <button onClick={() => handleDeleteTemplate(t.id)} className="p-1.5 text-slate-400 hover:text-rose-600 bg-white rounded shadow-sm border border-slate-100"><Trash2 size={14} /></button>
-                      </div>
-                   </div>
-                   <p className="text-sm font-medium text-slate-600 line-clamp-2 bg-white p-3 rounded border border-slate-100 border-dashed">{t.message_content}</p>
-                </div>
-             ))}
-           </div>
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 animate-in fade-in duration-300">

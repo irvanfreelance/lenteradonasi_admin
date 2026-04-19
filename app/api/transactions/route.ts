@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     const search = searchParams.get('search');
     const minAmount = searchParams.get('minAmount');
     const maxAmount = searchParams.get('maxAmount');
+    const campaignId = searchParams.get('campaignId');
     
     // Show all data by default unless filtered
     const startDate = searchParams.get('startDate');
@@ -59,6 +60,11 @@ export async function GET(req: Request) {
     if (maxAmount) {
       sql += ` AND i.total_amount <= $${params.length + 1}`;
       params.push(maxAmount);
+    }
+
+    if (campaignId) {
+      sql += ` AND t.campaign_id = $${params.length + 1}`;
+      params.push(campaignId);
     }
     
     sql += `

@@ -29,15 +29,33 @@ export default function NewCampaignPage() {
     target_amount: 0, end_date: '', is_zakat: false, is_qurban: false, 
     has_no_target: false, is_urgent: false, is_verified: true, status: 'ACTIVE'
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      let finalImageUrl = formData.image_url;
+      if (imageFile) {
+        toast('Mengupload gambar ke server...');
+        const fileForm = new FormData();
+        fileForm.append('file', imageFile);
+        
+        const response = await fetch(`/api/upload?filename=${imageFile.name}`, {
+          method: 'POST',
+          body: imageFile,
+        });
+        if (!response.ok) throw new Error('Gagal mengupload gambar');
+        const blobRes = await response.json();
+        finalImageUrl = blobRes.url;
+      }
+
+      const postData = { ...formData, image_url: finalImageUrl };
+
       const res = await fetch('/api/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(postData),
       });
       if (!res.ok) throw new Error('Failed to create campaign');
       toast.success('Kampanye berhasil dibuat');
@@ -161,6 +179,8 @@ export default function NewCampaignPage() {
             <FileUpload 
               value={formData.image_url}
               onChange={(url) => setFormData({...formData, image_url: url})}
+              deferred
+              onFileSelect={(file) => setImageFile(file)}
             />
           </div>
 
