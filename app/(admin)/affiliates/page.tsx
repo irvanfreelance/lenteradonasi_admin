@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import { 
   Plus, Search, Edit, Trash2, Eye, X, Save, Loader2,
   Users, UserPlus, Filter, XCircle, Download, ExternalLink,
-  ChevronRight, ArrowRight, AlertCircle
+  ChevronRight, ArrowRight, AlertCircle, LayoutGrid, List, Heart, Mail, Phone
 } from 'lucide-react';
 import { toast } from 'sonner';
 
