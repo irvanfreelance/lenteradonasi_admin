@@ -2,14 +2,15 @@
 
 import React from 'react';
 import useSWR from 'swr';
-import { 
-  Receipt, Users, Megaphone, CheckCircle, TrendingUp, 
+import {
+  Receipt, Users, Megaphone, CheckCircle, TrendingUp,
   BarChart3, Eye, ArrowUpRight
 } from 'lucide-react';
 import KPICard from '@/components/shared/kpi-card';
 import RevenueLineChart from '@/components/charts/revenue-line-chart';
 import TargetGaugeChart from '@/components/charts/target-gauge-chart';
 import { formatIDR } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -39,37 +40,37 @@ export default function DashboardPage() {
     <div className="space-y-8 pb-10">
       {/* KPI Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KPICard 
-          title="Total Donasi" 
-          value={formatIDR(summary.totalRevenue)} 
-          icon={Receipt} 
-          color="text-teal-600" 
-          bg="bg-teal-50" 
-          trend="+12.5%" 
-          trendUp={true}
+        <KPICard
+          title="Total Donasi"
+          value={formatIDR(summary.totalRevenue)}
+          icon={Receipt}
+          color="text-teal-600"
+          bg="bg-teal-50"
+          trend={`${summary.revenueTrendPercent >= 0 ? '+' : ''}${summary.revenueTrendPercent}%`}
+          trendUp={summary.revenueTrendPercent >= 0}
         />
-        <KPICard 
-          title="Total Donatur" 
-          value={summary.totalDonors.toLocaleString()} 
-          icon={Users} 
-          color="text-blue-600" 
-          bg="bg-blue-50" 
-          trend="+84" 
-          trendUp={true}
+        <KPICard
+          title="Total Donatur"
+          value={summary.totalDonors.toLocaleString()}
+          icon={Users}
+          color="text-blue-600"
+          bg="bg-blue-50"
+          trend={`${summary.donorsTrendPercent >= 0 ? '+' : ''}${summary.donorsTrendPercent}%`}
+          trendUp={summary.donorsTrendPercent >= 0}
         />
-        <KPICard 
-          title="Kampanye Aktif" 
-          value={summary.activeCampaigns} 
-          icon={Megaphone} 
-          color="text-amber-600" 
-          bg="bg-amber-50" 
+        <KPICard
+          title="Kampanye Aktif"
+          value={summary.activeCampaigns}
+          icon={Megaphone}
+          color="text-amber-600"
+          bg="bg-amber-50"
         />
-        <KPICard 
-          title="Transaksi Berhasil" 
-          value={summary.successTransactions.toLocaleString()} 
-          icon={CheckCircle} 
-          color="text-emerald-600" 
-          bg="bg-emerald-50" 
+        <KPICard
+          title="Transaksi Berhasil"
+          value={summary.successTransactions.toLocaleString()}
+          icon={CheckCircle}
+          color="text-emerald-600"
+          bg="bg-emerald-50"
         />
       </div>
 
@@ -79,11 +80,17 @@ export default function DashboardPage() {
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2 relative overflow-hidden group">
           <div className="flex justify-between items-center mb-8 relative z-10">
             <div>
-              <h3 className="font-normal text-slate-800 text-xl tracking-tight">Tren pendapatan</h3>
+              <h3 className="font-normal text-slate-800 text-xl tracking-tight">Tren penghimpunan</h3>
               <p className="text-xs text-slate-400 font-medium mt-1">7 hari terakhir</p>
             </div>
-            <div className="flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl shadow-sm border border-emerald-100 rotate-1 transition-transform group-hover:rotate-0">
-              <TrendingUp size={16} /> +15% dari bulan lalu
+            <div className={cn(
+              "flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-2xl shadow-sm border rotate-1 transition-transform group-hover:rotate-0",
+              summary.revenueTrendPercent >= 0
+                ? "text-emerald-600 bg-emerald-50 border-emerald-100"
+                : "text-rose-600 bg-rose-50 border-rose-100"
+            )}>
+              <TrendingUp size={16} className={summary.revenueTrendPercent < 0 ? "rotate-180" : ""} />
+              {summary.revenueTrendPercent >= 0 ? '+' : ''}{summary.revenueTrendPercent}% dari bulan lalu
             </div>
           </div>
           <RevenueLineChart data={revenueTrend} />
@@ -94,10 +101,10 @@ export default function DashboardPage() {
           <h3 className="font-normal text-slate-800 text-xl tracking-tight mb-2">Pencapaian target ngo</h3>
           <p className="text-xs text-slate-400 font-medium mb-10">Tahun berjalan (ytd)</p>
 
-          <TargetGaugeChart 
-            value={summary.totalRevenue} 
-            max={summary.targetRevenue} 
-            color="#14b8a6" 
+          <TargetGaugeChart
+            value={summary.totalRevenue}
+            max={summary.targetRevenue}
+            color="#14b8a6"
           />
 
           <div className="mt-8 w-full bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-3 transition-colors group-hover:bg-slate-100/50">
@@ -106,8 +113,8 @@ export default function DashboardPage() {
               <span className="font-bold text-teal-600">{formatCompactNumber(summary.totalRevenue)}</span>
             </div>
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-teal-500 rounded-full transition-all duration-1000" 
+              <div
+                className="h-full bg-teal-500 rounded-full transition-all duration-1000"
                 style={{ width: `${(summary.totalRevenue / summary.targetRevenue) * 100}%` }}
               ></div>
             </div>

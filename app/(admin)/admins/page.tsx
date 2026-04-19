@@ -207,7 +207,7 @@ export default function AdminsPage() {
         offset={offset}
         limit={limit}
         onPageChange={setPage}
-        onLimitChange={(newLimit) => { setPage(1); /* parent handles limit? no i need state for limit */ }}
+        onLimitChange={(newLimit) => { setLimit(newLimit); setPage(1); }}
         isLoading={isLoading}
       />
 

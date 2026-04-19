@@ -162,7 +162,7 @@ export default function CampaignUpdatesPage() {
           <div className="w-full md:w-80">
             <SearchableSelect 
                value={campaignId}
-               onChange={setCampaignId}
+               onChange={(val) => setCampaignId(String(val))}
                options={[{ id: '', name: 'Semua Kampanye' }, ...(campaigns?.map((c: any) => ({ id: c.id, name: c.title })) || [])]}
                placeholder="Filter Kampanye"
             />

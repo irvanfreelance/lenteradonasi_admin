@@ -148,7 +148,7 @@ export default function CampaignsPage() {
   const [categoryFilter, setCategoryFilter] = useState('0');
   
   const [page, setPage] = useState(1);
-  const limit = 50; // Increased limit for easier sorting
+  const [limit, setLimit] = useState(10);
   const offset = (page - 1) * limit;
 
   const [isModalOpen, setIsModalOpen] = useState(false);

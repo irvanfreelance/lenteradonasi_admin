@@ -3,13 +3,12 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import {
-  Plus, Search, Edit, Trash2, X, Save, Loader2, Heart, Mail, Phone,
-  LayoutGrid, List, Eye, AlertCircle,
+import { 
+  Plus, Search, Edit, Trash2, Eye, X, Save, Loader2,
+  Users, UserPlus, Filter, XCircle, Download, ExternalLink,
+  ChevronRight, ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 
 import { PageHeader } from '@/components/shared/page-header';
 import { DataTable } from '@/components/shared/data-table';
@@ -20,9 +19,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { formatIDR } from '@/lib/format';
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '@/lib/utils';
 
 const fetcher = (url: string) =>
   fetch(url).then(async (res) => {
