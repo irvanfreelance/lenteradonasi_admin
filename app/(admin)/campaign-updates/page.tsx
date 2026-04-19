@@ -141,7 +141,7 @@ export default function CampaignUpdatesPage() {
     <div className="max-w-6xl mx-auto space-y-8 pb-20">
       <PageHeader
          title="Kabar Penyaluran"
-         subtitle="Laporan detail aktivitas penyaluran dan update campaign"
+         description="Laporan detail aktivitas penyaluran dan update campaign"
       >
          <Button onClick={() => handleOpenModal()} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-500/20 rounded-xl px-6"><Plus size={18} className="mr-2" /> Tambah Kabar</Button>
       </PageHeader>
