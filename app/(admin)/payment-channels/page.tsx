@@ -84,7 +84,7 @@ function SortableRow({ item, onEdit, onDelete, onInstructions }: { item: any, on
         <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none">{item.provider}</Badge>
       </td>
       <td className="px-6 py-5">
-         <Badge variant="rose" className="bg-rose-50 text-rose-600 border-none">{item.type}</Badge>
+         <Badge variant="destructive" className="bg-rose-50 text-rose-600 border-none">{item.type}</Badge>
       </td>
       <td className="px-6 py-5">
         <div className="flex flex-col items-start gap-1">
@@ -304,7 +304,7 @@ export default function PaymentChannelsPage() {
                         item={item} 
                         onEdit={handleOpenModal} 
                         onDelete={handleDelete} 
-                        onInstructions={(id) => router.push(`/payment-channels/${id}/instructions`)}
+                        onInstructions={(id: number) => router.push(`/payment-channels/${id}/instructions`)}
                       />
                     ))
                   ) : (
