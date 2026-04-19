@@ -439,6 +439,9 @@ export default function CampaignDetailPage() {
                  <Pagination 
                    currentPage={updatePage}
                    totalPages={updateTotalPages}
+                   totalCount={campaign.updates?.length || 0}
+                   offset={(updatePage - 1) * updateLimit}
+                   limit={updateLimit}
                    onPageChange={(p) => setUpdatePage(p)}
                  />
                )}
