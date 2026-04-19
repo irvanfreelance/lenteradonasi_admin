@@ -42,7 +42,7 @@ export async function GET() {
         totalDonors: Number(summary.total_donors),
         activeCampaigns: Number(summary.active_campaigns),
         successTransactions: Number(summary.success_transactions),
-        targetRevenue: 1500000000, // Hardcoded for now, could be in ngo_configs
+        targetRevenue: 1500000000, 
       },
       revenueTrend: trendRes.rows.map(row => ({
         day: row.day,
@@ -52,27 +52,6 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error('API Stats Error:', error);
-    
-    // Return mock data if database not yet migrated/seeded (for UX during development)
-    return NextResponse.json({
-      summary: {
-        totalRevenue: 850450000,
-        totalDonors: 4231,
-        activeCampaigns: 12,
-        successTransactions: 5120,
-        targetRevenue: 1500000000,
-      },
-      revenueTrend: [
-        { day: 'Mon', value: 15000000 },
-        { day: 'Tue', value: 22000000 },
-        { day: 'Wed', value: 18000000 },
-        { day: 'Thu', value: 35000000 },
-        { day: 'Fri', value: 55000000 },
-        { day: 'Sat', value: 28000000 },
-        { day: 'Sun', value: 20000000 },
-      ],
-      isMock: true,
-      error: error.message
-    });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

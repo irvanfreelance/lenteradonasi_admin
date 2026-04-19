@@ -9,6 +9,8 @@ import {
 import { toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Pagination } from '@/components/shared/pagination';
+import { formatIDR } from '@/lib/format';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,14 +18,13 @@ function cn(...inputs: ClassValue[]) {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const formatIDR = (amount: number) => 
-  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount || 0);
+// formatIDR removed - using lib/format instead
 
 export default function WithdrawalsPage() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
   const offset = (page - 1) * limit;
 
   const { data: withdrawals, error, isLoading, mutate } = useSWR(
@@ -67,18 +68,18 @@ export default function WithdrawalsPage() {
     });
   };
 
-  if (error) return <div className="p-8 text-rose-500 font-bold bg-rose-50 rounded-2xl border border-rose-100 italic">Error: {error.message}</div>;
+  if (error) return <div className="p-8 text-rose-500 font-normal bg-rose-50 rounded-2xl border border-rose-100 italic">Error: {error.message}</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 text-left">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Permintaan Penarikan</h1>
-          <p className="text-sm text-slate-400 font-bold mt-1">Kelola pencairan komisi afiliasi</p>
+          <h1 className="text-2xl font-normal text-slate-800 tracking-tight">Permintaan Penarikan</h1>
+          <p className="text-sm text-slate-400 font-medium mt-1">Kelola pencairan komisi afiliasi</p>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center">
         <div className="relative flex-1 min-w-[300px] group">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
           <input 
@@ -95,7 +96,7 @@ export default function WithdrawalsPage() {
               key={s}
               onClick={() => { setFilterStatus(s); setPage(1); }}
               className={cn(
-                "px-4 py-2 text-xs font-black transition-all rounded-xl",
+                "px-4 py-2 text-xs font-normal transition-all rounded-xl",
                 filterStatus === s ? "bg-amber-600 text-white shadow-lg" : "bg-white text-slate-400 hover:bg-slate-50"
               )}
             >
@@ -105,11 +106,11 @@ export default function WithdrawalsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden text-left">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden text-left">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-separate border-spacing-0">
             <thead>
-              <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-bold">
+              <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-normal">
                 <th className="px-6 py-5 border-b border-slate-100 w-12 text-center">#</th>
                 <th className="px-6 py-5 border-b border-slate-100">Tanggal</th>
                 <th className="px-6 py-5 border-b border-slate-100">Afiliasi</th>
@@ -124,10 +125,10 @@ export default function WithdrawalsPage() {
               ) : withdrawals?.length > 0 ? (
                 withdrawals.map((w: any, idx: number) => (
                   <tr key={w.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-6 text-center text-xs font-bold text-slate-300">
+                    <td className="px-6 py-6 text-center text-xs font-normal text-slate-300">
                       {offset + idx + 1}
                     </td>
-                    <td className="px-6 py-6 text-xs font-bold text-slate-400 whitespace-nowrap">
+                    <td className="px-6 py-6 text-xs font-normal text-slate-400 whitespace-nowrap">
                       {new Date(w.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       <span className="block text-[10px] text-slate-300">{new Date(w.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
                     </td>
@@ -137,10 +138,10 @@ export default function WithdrawalsPage() {
                         <span className="text-[10px] text-slate-400 font-medium">{w.affiliate_code}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-6 text-right font-black text-slate-800 text-sm">{formatIDR(w.amount)}</td>
+                    <td className="px-6 py-6 text-right font-normal text-slate-800 text-sm">{formatIDR(w.amount)}</td>
                     <td className="px-6 py-6 text-center">
                       <span className={cn(
-                        "px-2.5 py-1 rounded-full text-[10px] font-semibold border shadow-sm",
+                        "px-2.5 py-1 rounded-full text-[10px] font-normal border shadow-sm",
                         w.status === 'PROCESSED' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : 
                         w.status === 'PENDING' ? "bg-amber-50 text-amber-700 border-amber-100" : 
                         "bg-rose-50 text-rose-700 border-rose-100"
@@ -162,59 +163,30 @@ export default function WithdrawalsPage() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={6} className="px-8 py-12 text-center text-slate-400 italic font-medium">Belum ada penarikan ditemukan.</td></tr>
+                <tr><td colSpan={6} className="px-8 py-12 text-center text-slate-400 italic font-semibold">Belum ada penarikan ditemukan.</td></tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination Footer */}
-        <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-xs font-bold text-slate-400">
-            Menampilkan <span className="text-slate-800">{Math.min(offset + 1, totalCount)}</span> - <span className="text-slate-800">{Math.min(offset + limit, totalCount)}</span> dari <span className="text-slate-800">{totalCount}</span> data
-          </p>
-          <div className="flex gap-2">
-            <button 
-              disabled={page === 1 || isLoading}
-              onClick={() => setPage(p => p - 1)}
-              className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-all active:scale-95"
-            >
-              Sebelumnya
-            </button>
-            <div className="flex gap-1">
-              {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                const pageNum = i + 1;
-                return (
-                  <button 
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={cn(
-                      "w-8 h-8 rounded-xl text-xs font-black transition-all",
-                      page === pageNum ? "bg-slate-900 text-white shadow-xl scale-110" : "bg-white text-slate-400 hover:bg-slate-50"
-                    )}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-            </div>
-            <button 
-              disabled={page >= totalPages || isLoading}
-              onClick={() => setPage(p => p + 1)}
-              className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-all active:scale-95"
-            >
-              Selanjutnya
-            </button>
-          </div>
-        </div>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          offset={offset}
+          limit={limit}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => { setLimit(newLimit); setPage(1); }}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Detail Modal */}
       {isDetailOpen && selectedWithdrawal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-800/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h2 className="text-xl font-black text-slate-800 tracking-tight text-left">Detail Pencairan Komisi</h2>
+              <h2 className="text-xl font-normal text-slate-800 tracking-tight text-left">Detail Pencairan Komisi</h2>
               <button onClick={() => setIsDetailOpen(false)} className="p-2 hover:bg-white rounded-full transition-all text-slate-400"><X size={20} /></button>
             </div>
             <div className="p-8 space-y-8 text-left">
@@ -223,11 +195,11 @@ export default function WithdrawalsPage() {
                    <Wallet size={40} strokeWidth={1.5} />
                  </div>
                  <div className="text-left">
-                   <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-tight">{selectedWithdrawal.affiliate_name}</h3>
+                   <h3 className="text-2xl font-normal text-slate-800 tracking-tight leading-tight">{selectedWithdrawal.affiliate_name}</h3>
                    <div className="flex items-center gap-2 mt-2">
-                       <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">Kode: {selectedWithdrawal.affiliate_code}</span>
+                       <span className="text-[10px] font-normal text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">Kode: {selectedWithdrawal.affiliate_code}</span>
                        <span className={cn(
-                        "px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border shadow-sm",
+                        "px-2 py-1 rounded-lg text-[9px] font-medium uppercase tracking-widest border shadow-sm",
                         selectedWithdrawal.status === 'PENDING' ? "bg-amber-50 text-amber-700 border-amber-100" : 
                         selectedWithdrawal.status === 'PROCESSED' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : 
                         "bg-rose-50 text-rose-700 border-rose-100"
@@ -238,26 +210,26 @@ export default function WithdrawalsPage() {
 
                <div className="grid grid-cols-2 gap-6">
                   <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 mb-2 flex items-center gap-1.5"><ArrowUpRight size={12}/> Nominal pencairan</p>
-                    <p className="text-2xl font-black text-slate-800 tracking-tighter">{formatIDR(selectedWithdrawal.amount)}</p>
+                    <p className="text-[10px] font-normal text-slate-400 mb-2 flex items-center gap-1.5"><ArrowUpRight size={12}/> Nominal pencairan</p>
+                    <p className="text-2xl font-normal text-slate-800 tracking-tighter">{formatIDR(selectedWithdrawal.amount)}</p>
                   </div>
                   <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 mb-2 flex items-center gap-1.5"><Calendar size={12}/> Diajukan pada</p>
-                    <p className="text-sm font-bold text-slate-700">{new Date(selectedWithdrawal.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-[10px] font-normal text-slate-400 mb-2 flex items-center gap-1.5"><Calendar size={12}/> Diajukan pada</p>
+                    <p className="text-sm font-normal text-slate-700">{new Date(selectedWithdrawal.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                </div>
 
-               <div className="bg-slate-900 p-8 rounded-[2rem] shadow-xl relative overflow-hidden group">
+               <div className="bg-slate-800 p-8 rounded-2xl shadow-xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 text-white/5 group-hover:text-white/10 transition-colors">
                     <ShieldCheck size={120} strokeWidth={1} />
                   </div>
                   <div className="relative z-10">
-                    <p className="text-[10px] font-black text-amber-400 mb-4">Informasi rekening bank</p>
-                    <div className="text-xl font-bold text-white tracking-tight leading-relaxed mb-6 font-mono">
+                    <p className="text-[10px] font-normal text-amber-400 mb-4">Informasi rekening bank</p>
+                    <div className="text-xl font-normal text-white tracking-tight leading-relaxed mb-6 font-mono">
                       {selectedWithdrawal.bank_account_info}
                     </div>
                     <div className="flex gap-2">
-                       <span className="bg-white/10 text-white/80 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">Verified Source</span>
+                       <span className="bg-white/10 text-white/80 px-3 py-1 rounded-full text-[9px] font-normal uppercase tracking-widest border border-white/10">Verified Source</span>
                     </div>
                   </div>
                </div>
@@ -268,8 +240,8 @@ export default function WithdrawalsPage() {
                        <CheckCircle size={20} />
                     </div>
                     <div>
-                       <p className="text-xs font-black text-emerald-800 uppercase tracking-widest">Berhasil Diproses</p>
-                       <p className="text-[10px] font-bold text-emerald-600 uppercase">Pada {new Date(selectedWithdrawal.processed_at).toLocaleDateString()} {new Date(selectedWithdrawal.processed_at).toLocaleTimeString()}</p>
+                       <p className="text-xs font-normal text-emerald-800 uppercase tracking-widest">Berhasil Diproses</p>
+                       <p className="text-[10px] font-normal text-emerald-600 uppercase">Pada {new Date(selectedWithdrawal.processed_at).toLocaleDateString()} {new Date(selectedWithdrawal.processed_at).toLocaleTimeString()}</p>
                     </div>
                  </div>
                )}
@@ -277,11 +249,11 @@ export default function WithdrawalsPage() {
                <div className="flex gap-3 pt-2">
                   {selectedWithdrawal.status === 'PENDING' ? (
                     <>
-                      <button onClick={() => handleUpdateStatus(selectedWithdrawal.id, 'CANCELLED')} className="flex-1 py-4 bg-white border border-rose-200 rounded-2xl text-xs font-black text-rose-600 hover:bg-rose-50 transition-all flex items-center justify-center gap-2 font-sans font-sans"><Ban size={16} /> Tolak</button>
-                      <button onClick={() => handleUpdateStatus(selectedWithdrawal.id, 'PROCESSED')} className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 font-sans"><CheckCircle size={16}/> Setujui & bayar</button>
+                      <button onClick={() => handleUpdateStatus(selectedWithdrawal.id, 'CANCELLED')} className="flex-1 py-4 bg-white border border-rose-200 rounded-2xl text-xs font-normal text-rose-600 hover:bg-rose-50 transition-all flex items-center justify-center gap-2 font-sans font-sans"><Ban size={16} /> Tolak</button>
+                      <button onClick={() => handleUpdateStatus(selectedWithdrawal.id, 'PROCESSED')} className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl text-xs font-normal shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 font-sans"><CheckCircle size={16}/> Setujui & bayar</button>
                     </>
                   ) : (
-                    <button onClick={() => setIsDetailOpen(false)} className="w-full py-4 bg-slate-900 text-white rounded-2xl text-xs font-black shadow-xl active:scale-95 transition-all font-sans">Tutup</button>
+                    <button onClick={() => setIsDetailOpen(false)} className="w-full py-4 bg-slate-800 text-white rounded-2xl text-[10px] font-normal uppercase tracking-widest shadow-xl active:scale-95 transition-all font-sans">Tutup</button>
                   )}
                </div>
             </div>

@@ -20,10 +20,18 @@ export async function GET(req: Request) {
     let sql = `
       SELECT 
         a.*,
-        (SELECT COUNT(*) FROM transactions t WHERE t.affiliate_id = a.id) as converted_donors,
-        (SELECT COALESCE(SUM(t.total_amount), 0) FROM transactions t WHERE t.affiliate_id = a.id) as raised_amount,
+        COALESCE(stats.donors, 0) as converted_donors,
+        COALESCE(stats.raised, 0) as raised_amount,
         COUNT(*) OVER() as total_count
       FROM affiliates a
+      LEFT JOIN (
+        SELECT 
+          affiliate_id, 
+          SUM(converted_donors) as donors, 
+          SUM(raised_amount) as raised
+        FROM affiliate_campaign_stats
+        GROUP BY affiliate_id
+      ) stats ON stats.affiliate_id = a.id
       WHERE 1=1
     `;
     

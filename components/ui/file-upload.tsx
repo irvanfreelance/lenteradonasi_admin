@@ -13,6 +13,8 @@ interface FileUploadProps {
   placeholder?: string;
   className?: string;
   label?: string;
+  deferred?: boolean;
+  onFileSelect?: (file: File) => void;
 }
 
 export function FileUpload({
@@ -21,7 +23,9 @@ export function FileUpload({
   onRemove,
   placeholder = "Upload gambar atau file",
   className,
-  label
+  label,
+  deferred = false,
+  onFileSelect
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -52,11 +56,16 @@ export function FileUpload({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleUpload(file);
+      if (deferred) {
+        onChange(URL.createObjectURL(file));
+        onFileSelect?.(file);
+      } else {
+        handleUpload(file);
+      }
     }
   };
 
-  const isImage = value?.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i);
+  const isImage = value?.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || value?.startsWith('blob:');
 
   return (
     <div className={cn("space-y-4 w-full", className)}>
@@ -90,14 +99,14 @@ export function FileUpload({
           <div 
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              "aspect-video bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 overflow-hidden cursor-pointer hover:border-teal-500/50 hover:bg-slate-100/50 transition-all group",
+              "aspect-video bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 overflow-hidden cursor-pointer hover:border-teal-500/50 hover:bg-slate-100/50 transition-all group",
               isUploading && "animate-pulse pointer-events-none"
             )}
           >
             {isUploading ? (
               <>
                 <Loader2 size={32} className="text-teal-500 animate-spin" />
-                <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest animate-pulse">Uploading...</span>
+                <span className="text-[10px] font-bold text-teal-600 uppercase tracking-widest animate-pulse">Uploading...</span>
               </>
             ) : (
               <>

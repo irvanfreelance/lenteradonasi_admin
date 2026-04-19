@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Megaphone, Receipt, Users, Settings, 
   ChevronLeft, Menu, LogOut, Heart, Tags, CreditCard, BellRing,
-  ShieldCheck, History, Wallet
+  ShieldCheck, History, Wallet, MessageSquare
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -18,6 +18,7 @@ function cn(...inputs: ClassValue[]) {
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: Megaphone, label: 'Kampanye', href: '/campaigns' },
+  { icon: MessageSquare, label: 'Kabar Penyaluran', href: '/campaign-updates' },
   { icon: Tags, label: 'Kategori', href: '/categories' },
   { icon: Receipt, label: 'Transaksi', href: '/transactions' },
   { icon: Users, label: 'Donatur', href: '/donors' },
@@ -25,6 +26,7 @@ const menuItems = [
   { icon: Wallet, label: 'Penarikan', href: '/withdrawals' },
   { icon: BellRing, label: 'Notifikasi', href: '/notifications' },
   { icon: ShieldCheck, label: 'Admin', href: '/admins' },
+  { icon: CreditCard, label: 'Payment Channels', href: '/payment-channels' },
   { icon: History, label: 'Log Sistem', href: '/logs' },
   { icon: Settings, label: 'Pengaturan', href: '/settings' },
 ];
@@ -36,7 +38,7 @@ export default function Sidebar({ isOpen, toggle }: { isOpen: boolean, toggle: (
   return (
     <aside 
       className={cn(
-        "fixed left-0 top-0 h-full bg-slate-900 text-slate-300 transition-all duration-300 z-50 flex flex-col shadow-2xl",
+        "fixed left-0 top-0 h-full bg-slate-800 text-slate-300 transition-all duration-300 z-50 flex flex-col shadow-2xl",
         isOpen ? "w-64" : "w-20"
       )}
     >
@@ -46,7 +48,7 @@ export default function Sidebar({ isOpen, toggle }: { isOpen: boolean, toggle: (
           <Heart size={20} className="text-white fill-teal-100/20" />
         </div>
         {isOpen && (
-          <div className="font-bold text-lg text-white truncate animate-in fade-in duration-500">
+          <div className="font-normal text-lg text-white truncate animate-in fade-in duration-500">
             Lentera<span className="text-teal-400">Donasi</span>
           </div>
         )}

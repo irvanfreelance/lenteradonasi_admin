@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { FileUpload } from '@/components/ui/file-upload';
+import { NumberInput } from '@/components/ui/number-input';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -48,7 +50,7 @@ export default function NewCampaignPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
+    <div className="max-w-6xl mx-auto space-y-8 pb-20">
       <div className="flex items-center gap-4 mb-8">
         <Button 
           onClick={() => router.back()}
@@ -70,9 +72,9 @@ export default function NewCampaignPage() {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Info */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
             <div className="text-left">
-              <label className="block text-xs font-bold text-slate-500 mb-2 font-sans">Judul Kampanye</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-2 font-sans">Judul Kampanye</label>
               <Input 
                 required 
                 value={formData.title} 
@@ -83,9 +85,9 @@ export default function NewCampaignPage() {
 
             <div className="grid grid-cols-2 gap-6">
               <div className="text-left">
-                <label className="block text-xs font-bold text-slate-500 mb-2">Slug URL</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-2">Slug URL</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs font-bold">/</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs font-semibold">/</span>
                   <Input 
                     required 
                     value={formData.slug} 
@@ -96,7 +98,7 @@ export default function NewCampaignPage() {
                 </div>
               </div>
               <div className="text-left">
-                <label className="block text-xs font-bold text-slate-500 mb-2">Kategori</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-2">Kategori</label>
                 <SearchableSelect 
                   value={formData.category_id} 
                   onChange={(val) => setFormData({...formData, category_id: Number(val)})} 
@@ -106,31 +108,30 @@ export default function NewCampaignPage() {
             </div>
 
             <div className="text-left">
-              <label className="block text-xs font-bold text-slate-500 mb-2">Deskripsi Lengkap</label>
-              <textarea 
-                rows={6}
+              <label className="block text-xs font-semibold text-slate-500 mb-2">Deskripsi Lengkap</label>
+              <RichTextEditor
                 value={formData.description || ''} 
-                onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                onChange={(val) => setFormData({...formData, description: val})} 
                 placeholder="Ceritakan tentang program ini secara detail..."
-                className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-6 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50 transition-all resize-none" 
+                className="w-full bg-slate-50 border border-slate-100 rounded-2xl text-sm font-normal text-slate-900 overflow-hidden" 
               />
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-            <h3 className="text-sm font-black text-slate-800 tracking-tight text-left">Pengaturan Target & Waktu</h3>
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
+            <h3 className="text-sm font-normal text-slate-800 tracking-tight text-left">Pengaturan Target & Waktu</h3>
             <div className="grid grid-cols-2 gap-6">
               <div className="text-left">
-                <label className="block text-xs font-bold text-slate-500 mb-2">Target Dana (IDR)</label>
-                <Input 
-                  type="number" 
+                <label className="block text-xs font-semibold text-slate-500 mb-2">Target Dana (IDR)</label>
+                <NumberInput 
                   disabled={formData.has_no_target}
                   value={formData.target_amount} 
-                  onChange={(e) => setFormData({...formData, target_amount: parseFloat(e.target.value)})} 
+                  onChange={(val) => setFormData({...formData, target_amount: val})}
+                  prefix="Rp"
                 />
               </div>
               <div className="text-left">
-                <label className="block text-xs font-bold text-slate-500 mb-2">Tanggal Berakhir</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-2">Tanggal Berakhir</label>
                 <Input 
                   type="date" 
                   value={formData.end_date} 
@@ -146,8 +147,8 @@ export default function NewCampaignPage() {
                 className="w-5 h-5 text-teal-600 rounded-lg border-slate-200 focus:ring-teal-500" 
               />
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-700">Terima Tanpa Batas Target</span>
-                <span className="text-[10px] font-bold text-slate-400 mt-0.5">Donasi akan terus dibuka meskipun target sudah tercapai</span>
+                <span className="text-xs font-semibold text-slate-700">Terima Tanpa Batas Target</span>
+                <span className="text-[10px] font-semibold text-slate-400 mt-0.5">Donasi akan terus dibuka meskipun target sudah tercapai</span>
               </div>
             </label>
           </div>
@@ -155,16 +156,16 @@ export default function NewCampaignPage() {
 
         {/* Sidebar Info */}
         <div className="space-y-6">
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-            <h3 className="text-sm font-black text-slate-800 tracking-tight text-left">Foto Utama</h3>
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
+            <h3 className="text-sm font-normal text-slate-800 tracking-tight text-left">Foto Utama</h3>
             <FileUpload 
               value={formData.image_url}
               onChange={(url) => setFormData({...formData, image_url: url})}
             />
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-4">
-             <h3 className="text-sm font-black text-slate-800 tracking-tight text-left">Atribut Kampanye</h3>
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+             <h3 className="text-sm font-normal text-slate-800 tracking-tight text-left">Atribut Kampanye</h3>
              {[
                { id: 'is_urgent', label: 'Darurat / Mendesak', icon: AlertCircle, color: 'text-rose-500' },
                { id: 'is_zakat', label: 'Program Zakat', icon: CheckCircle2, color: 'text-emerald-500' },
@@ -174,7 +175,7 @@ export default function NewCampaignPage() {
                 <label key={item.id} className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors rounded-2xl border border-slate-100 cursor-pointer">
                   <div className="flex items-center gap-3">
                     <item.icon size={16} className={item.color} />
-                    <span className="text-xs font-bold text-slate-600">{item.label}</span>
+                    <span className="text-xs font-semibold text-slate-600">{item.label}</span>
                   </div>
                   <input 
                     type="checkbox" 

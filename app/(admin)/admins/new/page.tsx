@@ -34,7 +34,7 @@ export default function NewAdminPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 pb-20">
+    <div className="max-w-6xl mx-auto space-y-8 pb-20">
       <div className="flex items-center gap-4">
         <button 
           onClick={() => router.back()}
@@ -43,16 +43,16 @@ export default function NewAdminPage() {
           <ChevronLeft size={20} />
         </button>
         <div className="text-left">
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Tambah Administrator</h1>
-          <p className="text-sm text-slate-400 font-bold mt-1 text-left">Daftarkan akun admin baru untuk kelola panel</p>
+          <h1 className="text-2xl font-normal text-slate-800 tracking-tight">Tambah Administrator</h1>
+          <p className="text-sm text-slate-400 font-medium mt-1 text-left">Daftarkan akun admin baru untuk kelola panel</p>
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <form onSubmit={handleSubmit} className="space-y-8">
            <div className="space-y-6">
               <div className="text-left">
-                <label className="block text-xs font-bold text-slate-500 mb-2 flex items-center gap-2">
+                <label className="block text-xs font-normal text-slate-500 mb-2 flex items-center gap-2">
                   <User size={12}/> Nama Lengkap
                 </label>
                 <input 
@@ -65,7 +65,7 @@ export default function NewAdminPage() {
               </div>
 
               <div className="text-left">
-                <label className="block text-xs font-bold text-slate-500 mb-2 flex items-center gap-2">
+                <label className="block text-xs font-normal text-slate-500 mb-2 flex items-center gap-2">
                   <Mail size={12}/> Email Login
                 </label>
                 <input 
@@ -80,7 +80,7 @@ export default function NewAdminPage() {
 
               <div className="grid grid-cols-2 gap-6">
                  <div className="text-left">
-                    <label className="block text-xs font-bold text-slate-500 mb-2">Hak Akses</label>
+                    <label className="block text-xs font-normal text-slate-500 mb-2">Hak Akses</label>
                     <select 
                       value={formData.role} 
                       onChange={(e) => setFormData({...formData, role: e.target.value})} 
@@ -92,16 +92,17 @@ export default function NewAdminPage() {
                     </select>
                  </div>
                  <div className="text-left">
-                    <label className="block text-xs font-bold text-slate-500 mb-2">Status Akun</label>
+                    <label className="block text-xs font-normal text-slate-500 mb-2">Status Akun</label>
+                    <label className="block text-xs font-medium text-slate-500 mb-2">Status Akun</label>
                     <div className="flex gap-2">
                        {['ACTIVE', 'INACTIVE'].map((s) => (
                          <button
                            key={s}
                            type="button"
                            onClick={() => setFormData({...formData, status: s})}
-                           className={`flex-1 py-4 px-4 rounded-2xl text-[10px] font-black transition-all border ${
+                           className={`flex-1 py-4 px-4 rounded-2xl text-[10px] font-normal transition-all border ${
                              formData.status === s 
-                               ? 'bg-slate-900 text-white border-slate-900' 
+                               ? 'bg-indigo-600 text-white border-slate-900' 
                                : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50'
                            }`}
                          >
@@ -113,18 +114,18 @@ export default function NewAdminPage() {
               </div>
            </div>
 
-           <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-start gap-4 text-left">
+           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-start gap-4 text-left">
               <div className="p-2 bg-white rounded-xl text-amber-500 shadow-sm"><ShieldAlert size={20}/></div>
               <div>
-                <p className="text-xs font-black text-slate-800 tracking-tight">Catatan Keamanan</p>
-                <p className="text-[10px] font-bold text-slate-400 mt-1 leading-relaxed">Setelah disimpan, sistem akan mengirimkan instruksi setel password ke email yang didaftarkan. Pastikan email aktif.</p>
+                <p className="text-xs font-normal text-slate-800 tracking-tight">Catatan Keamanan</p>
+                <p className="text-[10px] font-normal text-slate-400 mt-1 leading-relaxed">Setelah disimpan, sistem akan mengirimkan instruksi setel password ke email yang didaftarkan. Pastikan email aktif.</p>
               </div>
            </div>
 
            <button 
              type="submit"
              disabled={isSubmitting}
-             className="w-full bg-slate-900 text-white py-5 rounded-[2rem] text-sm font-black shadow-xl shadow-slate-900/20 hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3"
+             className="w-full bg-indigo-600 text-white py-5 rounded-2xl text-sm font-normal shadow-xl shadow-slate-900/20 hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3"
            >
              {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <ShieldCheck size={20} />}
              Simpan Akses Admin

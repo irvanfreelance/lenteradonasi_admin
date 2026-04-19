@@ -17,6 +17,8 @@ export async function GET(req: Request) {
     const search = searchParams.get('search');
     const status = searchParams.get('status');
 
+    const affiliateIdFilter = searchParams.get('affiliate_id');
+
     let sql = `
       SELECT 
         w.*,
@@ -29,7 +31,12 @@ export async function GET(req: Request) {
     `;
     
     const params: any[] = [];
-    
+
+    if (affiliateIdFilter) {
+      sql += ` AND w.affiliate_id = $${params.length + 1}`;
+      params.push(Number(affiliateIdFilter));
+    }
+
     if (search) {
       sql += ` AND (a.name ILIKE $${params.length + 1} OR a.affiliate_code ILIKE $${params.length + 1})`;
       params.push(`%${search}%`);

@@ -24,12 +24,12 @@ export default function KPICard({ title, value, icon: Icon, color, bg, trend, tr
         <Icon size={24} />
       </div>
       <div className="flex-1">
-        <p className="text-sm font-semibold text-slate-400 mb-1">{title}</p>
+        <p className="text-sm font-medium text-slate-400 mb-1">{title}</p>
         <div className="flex items-center gap-2">
-          <h3 className="text-2xl font-black text-slate-800 tracking-tight">{value}</h3>
+          <h3 className="text-2xl font-normal text-slate-800 tracking-tight">{value}</h3>
           {trend && (
             <span className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              "text-[10px] font-normal px-1.5 py-0.5 rounded-full",
               trendUp ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
             )}>
               {trend}

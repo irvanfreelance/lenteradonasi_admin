@@ -215,20 +215,25 @@ CREATE TABLE donors (
 
 CREATE TABLE payment_methods (
     id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL,
     name VARCHAR(100) NOT NULL,
+    logo_url VARCHAR(255),
     type VARCHAR(50) NOT NULL, 
     provider VARCHAR(50) NOT NULL, 
     admin_fee_flat BIGINT DEFAULT 0,
     admin_fee_pct DECIMAL(5,2) DEFAULT 0.00,
-    is_active BOOLEAN DEFAULT TRUE
+    is_active BOOLEAN DEFAULT TRUE,
+    is_redirect BOOLEAN DEFAULT FALSE,
+    sort_order INT DEFAULT 0
 );
 
 CREATE TABLE payment_instructions (
     id BIGSERIAL PRIMARY KEY,
     payment_method_id BIGINT NOT NULL REFERENCES payment_methods(id) ON DELETE CASCADE,
-    instruction_group VARCHAR(100) NOT NULL, 
-    step_number INT NOT NULL,
-    instruction TEXT NOT NULL
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =================================================================================
@@ -332,6 +337,7 @@ CREATE TABLE payment_logs (
 CREATE TABLE notification_logs (
     id BIGSERIAL PRIMARY KEY,
     template_id BIGINT REFERENCES notification_templates(id) ON DELETE SET NULL,
+    invoice_code VARCHAR(50),
     recipient VARCHAR(150) NOT NULL,
     channel VARCHAR(20) NOT NULL,
     request_payload TEXT,
@@ -380,6 +386,7 @@ CREATE INDEX idx_withdrawals_affiliate ON withdrawals(affiliate_id);
 CREATE INDEX idx_payment_logs_invoice ON payment_logs(invoice_code);
 CREATE INDEX idx_ads_conversion_logs_invoice ON ads_conversion_logs(invoice_code);
 CREATE INDEX idx_notification_logs_template ON notification_logs(template_id);
+CREATE INDEX idx_notification_logs_invoice ON notification_logs(invoice_code);
 
 -- =================================================================================
 -- SEED DATA (IDENTIK 100% DENGAN CANVAS REACT FRONTEND & ADMIN)
@@ -478,22 +485,17 @@ INSERT INTO donors (id, name, email, phone) VALUES
 (2, 'Budi Santoso', 'budi.s@email.com', '08567890123'),
 (3, 'Siti Aminah', 'siti@email.com', '08198765432');
 
-INSERT INTO payment_methods (id, name, type, provider, admin_fee_flat) VALUES
-(1, 'GoPay', 'E-Wallet', 'Midtrans', 0),
-(2, 'BCA Virtual Account', 'Bank Transfer', 'Xendit', 4000),
-(3, 'Mandiri Virtual Account', 'Bank Transfer', 'Xendit', 4000),
-(4, 'BSI Virtual Account', 'Bank Transfer', 'Xendit', 4000);
+INSERT INTO payment_methods (id, code, name, logo_url, type, provider, admin_fee_flat, is_redirect, sort_order) VALUES
+(1, 'GOPAY', 'GoPay', 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg', 'E-Wallet', 'Midtrans', 0, FALSE, 1),
+(2, 'BCAVA', 'BCA Virtual Account', 'https://upload.wikimedia.org/wikipedia/id/e/e0/BCA_logo.svg', 'Bank Transfer', 'Xendit', 4000, FALSE, 2),
+(3, 'MANDIRIVA', 'Mandiri Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_of_Bank_Mandiri.svg', 'Bank Transfer', 'Xendit', 4000, FALSE, 3),
+(4, 'BSIVA', 'BSI Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Bank_Syariah_Indonesia.svg', 'Bank Transfer', 'Xendit', 4000, FALSE, 4);
 
 -- Instruksi Pembayaran
-INSERT INTO payment_instructions (id, payment_method_id, instruction_group, step_number, instruction) VALUES
-(1, 2, 'BCA Mobile', 1, 'Buka aplikasi BCA Mobile dan login.'),
-(2, 2, 'BCA Mobile', 2, 'Pilih menu m-Transfer > BCA Virtual Account.'),
-(3, 2, 'BCA Mobile', 3, 'Masukkan nomor Virtual Account yang tertera di atas dan klik Send.'),
-(4, 2, 'ATM BCA', 1, 'Masukkan kartu ATM dan PIN Anda.'),
-(5, 2, 'ATM BCA', 2, 'Pilih menu Transaksi Lainnya > Transfer > Ke Rek BCA Virtual Account.'),
-(6, 1, 'Aplikasi Gojek / GoPay', 1, 'Buka aplikasi Gojek atau dompet digital Anda.'),
-(7, 1, 'Aplikasi Gojek / GoPay', 2, 'Pilih menu Bayar / Scan.'),
-(8, 1, 'Aplikasi Gojek / GoPay', 3, 'Scan QR Code yang tampil di layar atau upload dari galeri.');
+INSERT INTO payment_instructions (id, payment_method_id, title, content, sort_order) VALUES
+(1, 2, 'Pembayaran Pembayaran via m-BCA', '<ol><li>Buka aplikasi BCA Mobile dan login.</li><li>Pilih menu <strong>m-Transfer</strong> > <strong>BCA Virtual Account</strong>.</li><li>Masukkan nomor Virtual Account yang tertera di atas dan klik <strong>Send</strong>.</li></ol>', 1),
+(2, 2, 'Pembayaran Pembayaran via ATM BCA', '<ol><li>Masukkan kartu ATM dan PIN Anda.</li><li>Pilih menu <strong>Transaksi Lainnya</strong> > <strong>Transfer</strong> > <strong>Ke Rek BCA Virtual Account</strong>.</li></ol>', 2),
+(3, 1, 'Pembayaran dengan Aplikasi Gojek / GoPay', '<ol><li>Buka aplikasi Gojek atau dompet digital Anda.</li><li>Pilih menu <strong>Bayar / Scan</strong>.</li><li>Scan QR Code yang tampil di layar atau upload dari galeri.</li></ol>', 1);
 
 -- 6. Transaksi Partitioned (Bulan Oktober 2026)
 -- Transaksi 1: Andi Dermawan (Camp 1)
@@ -539,9 +541,9 @@ INSERT INTO payment_logs (id, invoice_code, endpoint, request_payload, response_
 (3, 'TRX-9923', 'https://api.xendit.co/callback/virtual_accounts', '{"external_id": "TRX-9923", "amount": 21004000, "status": "COMPLETED", "transaction_timestamp": "2026-10-12T16:15:00.000Z"}', '{"status": "success", "message": "Callback processed and jobs queued"}', 200);
 
 -- Notification Logs (Merekam Request & Response ke Fonnte API)
-INSERT INTO notification_logs (id, template_id, recipient, channel, request_payload, response_payload, status) VALUES
-(1, 1, '08123456789', 'WHATSAPP', '{"target": "08123456789", "message": "Terima kasih Andi Dermawan, donasi Rp 100.000 via GoPay berhasil kami terima. Semoga membawa keberkahan.", "countryCode": "62"}', '{"status": true, "detail": "message sent successfully", "process": "1 messages sent"}', 'SUCCESS'),
-(2, 2, '08123456789', 'WHATSAPP', '{"target": "08123456789", "message": "Halo Hamba Allah, tagihan donasi Rp 504.000 menunggu pembayaran. Silakan transfer ke BCA Virtual Account berikut: 807708123456789 sebelum kedaluwarsa.", "countryCode": "62"}', '{"status": true, "detail": "message sent successfully"}', 'SUCCESS');
+INSERT INTO notification_logs (id, template_id, invoice_code, recipient, channel, request_payload, response_payload, status) VALUES
+(1, 1, 'TRX-9921', '08123456789', 'WHATSAPP', '{"target": "08123456789", "message": "Terima kasih Andi Dermawan, donasi Rp 100.000 via GoPay berhasil kami terima. Semoga membawa keberkahan.", "countryCode": "62"}', '{"status": true, "detail": "message sent successfully", "process": "1 messages sent"}', 'SUCCESS'),
+(2, 2, 'TRX-9922', '08123456789', 'WHATSAPP', '{"target": "08123456789", "message": "Halo Hamba Allah, tagihan donasi Rp 504.000 menunggu pembayaran. Silakan transfer ke BCA Virtual Account berikut: 807708123456789 sebelum kedaluwarsa.", "countryCode": "62"}', '{"status": true, "detail": "message sent successfully"}', 'SUCCESS');
 
 -- Ads Conversion Logs (Merekam Server-to-Server hit ke Meta CAPI & TikTok Events API)
 INSERT INTO ads_conversion_logs (id, invoice_code, platform, event_name, request_payload, response_payload, http_status, status) VALUES

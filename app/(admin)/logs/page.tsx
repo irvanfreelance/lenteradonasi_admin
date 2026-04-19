@@ -15,13 +15,15 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+import { Pagination } from '@/components/shared/pagination';
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function LogsPage() {
   const [activeTab, setActiveTab] = useState('payment'); // payment, notification, ads
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
   const offset = (page - 1) * limit;
 
   const { data: logs, error, isLoading } = useSWR(
@@ -46,14 +48,14 @@ export default function LogsPage() {
     { id: 'ads', label: 'Ads Conversion', icon: Share2, color: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
-  if (error) return <div className="p-8 text-rose-500 font-bold bg-rose-50 rounded-2xl border border-rose-100 italic">Error: {error.message}</div>;
+  if (error) return <div className="p-8 text-rose-500 font-normal bg-rose-50 rounded-2xl border border-rose-100 italic">Error: {error.message}</div>;
 
   return (activeTab &&
     <div className="space-y-6 animate-in fade-in duration-500 text-left">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Log sistem</h1>
-          <p className="text-sm text-slate-400 font-bold mt-1">Audit trail & monitoring api</p>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Log sistem</h1>
+          <p className="text-sm text-slate-400 font-medium mt-1">Audit trail & monitoring api</p>
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-3 text-slate-400" size={16} />
@@ -67,14 +69,14 @@ export default function LogsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 p-1 bg-white border border-slate-100 rounded-[2rem] w-fit shadow-sm overflow-hidden">
+      <div className="flex flex-wrap gap-4 p-1 bg-white border border-slate-100 rounded-2xl w-fit shadow-sm overflow-hidden">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setPage(1); }}
             className={cn(
-              "px-6 py-2.5 rounded-xl text-xs font-black transition-all",
-              activeTab === tab.id ? "bg-slate-800 text-white shadow-lg" : "text-slate-500 hover:bg-slate-800/50"
+              "px-6 py-2.5 rounded-xl text-xs font-bold transition-all",
+              activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:bg-slate-800/50"
             )}
           >
             {tab.label}
@@ -82,26 +84,26 @@ export default function LogsPage() {
         ))}
       </div>
 
-      <div className="bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-800 text-left">
-        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+      <div className="bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700 text-left">
+        <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
               <Terminal size={14} className="text-emerald-500" />
             </div>
-            <span className="text-[10px] font-black text-slate-400">
+            <span className="text-[10px] font-normal text-slate-400">
               {activeTab} output stream
             </span>
           </div>
           <div className="flex items-center gap-2">
              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-             <span className="text-[9px] font-black text-emerald-500/80">Live stream</span>
+             <span className="text-[9px] font-normal text-emerald-500/80">Live stream</span>
           </div>
         </div>
         
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-800/50 text-slate-500 text-[9px] font-bold">
+              <tr className="bg-slate-800/50 text-slate-500 text-[9px] font-semibold">
                 <th className="px-6 py-4 border-b border-slate-800 w-12 text-center text-slate-600">#</th>
                 <th className="px-6 py-4 border-b border-slate-800">Timestamp</th>
                 {activeTab === 'payment' && <th className="px-6 py-4 border-b border-slate-800">Invoice Code</th>}
@@ -152,58 +154,30 @@ export default function LogsPage() {
           </table>
         </div>
         
-        <div className="p-8 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-[10px] font-medium text-slate-600">
-            Total Records: <span className="text-slate-400">{totalCount}</span> • Showing <span className="text-slate-400">{Math.min(offset + 1, totalCount)}-{Math.min(offset + limit, totalCount)}</span>
-          </p>
-          <div className="flex gap-2">
-            <button 
-              disabled={page === 1 || isLoading}
-              onClick={() => setPage(p => p - 1)}
-              className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-[10px] font-medium text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30 transition-all active:scale-95"
-            >
-              Sebelumnya
-            </button>
-            <div className="flex gap-1.5">
-              {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                const pageNum = i + 1;
-                return (
-                  <button 
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={cn(
-                      "w-8 h-8 rounded-xl text-[10px] font-medium transition-all border",
-                      page === pageNum ? "bg-emerald-500 text-slate-900 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "bg-slate-800/30 text-slate-600 border-slate-700/50 hover:bg-slate-700 hover:text-slate-400"
-                    )}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-            </div>
-            <button 
-              disabled={page >= totalPages || isLoading}
-              onClick={() => setPage(p => p + 1)}
-              className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-[10px] font-medium text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30 transition-all active:scale-95"
-            >
-              Selanjutnya
-            </button>
-          </div>
-        </div>
+         <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          offset={offset}
+          limit={limit}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => { setLimit(newLimit); setPage(1); }}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Detail Modal */}
       {isDetailOpen && selectedLog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-slate-900 w-full max-w-2xl rounded-[3rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-800/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-slate-800 w-full max-w-2xl rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
               <div className="flex items-center gap-3">
                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-lg">
                     <Activity size={20} className="text-emerald-500" />
                  </div>
                  <div className="text-left font-sans">
-                   <h2 className="text-xl font-black text-white tracking-tight leading-none">Log metadata</h2>
-                   <p className="text-[10px] font-bold text-slate-500 mt-1.5 opacity-60">System audit trail stream</p>
+                   <h2 className="text-xl font-normal text-white tracking-tight leading-none">Log metadata</h2>
+                   <p className="text-[10px] font-normal text-slate-500 mt-1.5 opacity-60">System audit trail stream</p>
                  </div>
               </div>
               <button onClick={() => setIsDetailOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-all text-slate-500 hover:text-white"><X size={24} /></button>
@@ -211,24 +185,24 @@ export default function LogsPage() {
             <div className="p-8 space-y-8 text-left font-sans">
                <div className="grid grid-cols-2 gap-6">
                   <div className="bg-slate-800/20 p-6 rounded-3xl border border-slate-800/50 group hover:border-emerald-500/20 transition-colors">
-                    <p className="text-[10px] font-black text-slate-600 mb-2 flex items-center gap-1.5"><Calendar size={12}/> Event timestamp</p>
-                    <p className="text-sm font-black text-emerald-500 group-hover:text-emerald-400 transition-colors">{new Date(selectedLog.created_at).toLocaleString('id-ID')}</p>
+                    <p className="text-[10px] font-normal text-slate-600 mb-2 flex items-center gap-1.5"><Calendar size={12}/> Event timestamp</p>
+                    <p className="text-sm font-normal text-emerald-500 group-hover:text-emerald-400 transition-colors">{new Date(selectedLog.created_at).toLocaleString('id-ID')}</p>
                   </div>
                   <div className="bg-slate-800/20 p-6 rounded-3xl border border-slate-800/50 group hover:border-blue-500/20 transition-colors">
-                    <p className="text-[10px] font-black text-slate-600 mb-2 flex items-center gap-1.5"><Hash size={12}/> Log reference id</p>
-                    <p className="text-sm font-black text-blue-400 transition-colors group-hover:text-blue-300">#LOG-{selectedLog.id}</p>
+                    <p className="text-[10px] font-normal text-slate-600 mb-2 flex items-center gap-1.5"><Hash size={12}/> Log reference id</p>
+                    <p className="text-sm font-normal text-blue-400 transition-colors group-hover:text-blue-300">#LOG-{selectedLog.id}</p>
                   </div>
                </div>
 
                <div className="space-y-4 font-sans font-bold">
                   <div className="flex justify-between items-center p-5 bg-slate-800/10 rounded-2xl border border-slate-800/30">
-                     <span className="text-[10px] font-bold text-slate-500 flex items-center gap-2"><Globe size={14}/> Service / target</span>
-                     <span className="text-xs font-black text-slate-300 underline decoration-emerald-500/50 underline-offset-4">{activeTab === 'payment' ? selectedLog.endpoint : (activeTab === 'notification' ? selectedLog.channel : selectedLog.platform)}</span>
+                     <span className="text-[10px] font-normal text-slate-500 flex items-center gap-2"><Globe size={14}/> Service / target</span>
+                     <span className="text-xs font-normal text-slate-300 underline decoration-emerald-500/50 underline-offset-4">{activeTab === 'payment' ? selectedLog.endpoint : (activeTab === 'notification' ? selectedLog.channel : selectedLog.platform)}</span>
                   </div>
                   <div className="flex justify-between items-center p-5 bg-slate-800/10 rounded-2xl border border-slate-800/30 font-sans">
-                     <span className="text-[10px] font-bold text-slate-500 flex items-center gap-2"><AlertCircle size={14}/> Operational status</span>
+                     <span className="text-[10px] font-normal text-slate-500 flex items-center gap-2"><AlertCircle size={14}/> Operational status</span>
                      <span className={cn(
-                       "px-3 py-1 rounded-full text-[10px] font-bold shadow-lg font-sans",
+                       "px-3 py-1 rounded-full text-[10px] font-normal shadow-lg font-sans",
                        (selectedLog.http_status === 200 || selectedLog.status === 'SUCCESS' || selectedLog.status === 'DONE') ? "bg-emerald-500 text-slate-900 border-emerald-400" : "bg-rose-500 text-white border-rose-400"
                      )}>
                        {activeTab === 'payment' ? `HTTP ${selectedLog.http_status}` : (selectedLog.status || 'PROCESSED')}
@@ -236,13 +210,13 @@ export default function LogsPage() {
                   </div>
                </div>
 
-               <div className="bg-slate-950 p-8 rounded-[2.5rem] border border-slate-800 shadow-inner relative overflow-hidden group font-sans">
+               <div className="bg-slate-800/20 p-8 rounded-2xl border border-slate-800 shadow-inner relative overflow-hidden group font-sans">
                   <div className="absolute top-0 right-0 p-6 text-white/5 opacity-40 group-hover:opacity-100 transition-opacity">
                     <History size={120} strokeWidth={1} />
                   </div>
                   <div className="relative z-10 text-left font-sans">
-                    <p className="text-[10px] font-black text-slate-500 mb-4">Response payload data</p>
-                    <div className="font-mono text-[10px] text-emerald-500/90 leading-relaxed max-h-[200px] overflow-y-auto custom-scrollbar italic font-sans font-bold font-sans">
+                    <p className="text-[10px] font-normal text-slate-500 mb-4">Response payload data</p>
+                    <div className="font-mono text-[10px] text-emerald-500/90 leading-relaxed max-h-[200px] overflow-y-auto custom-scrollbar italic font-sans font-normal font-sans">
                       <div className="p-4 bg-black/40 rounded-xl border border-slate-800/50 whitespace-pre-wrap break-all shadow-inner font-sans">
                         {selectedLog.raw_response || selectedLog.metadata || selectedLog.message || JSON.stringify(selectedLog, null, 2)}
                       </div>
@@ -251,7 +225,7 @@ export default function LogsPage() {
                </div>
 
                <div className="flex gap-4 pt-2 font-sans">
-                  <button onClick={() => setIsDetailOpen(false)} className="w-full py-5 bg-white text-slate-900 rounded-[2rem] text-[10px] font-black shadow-2xl active:scale-95 transition-all hover:bg-slate-100 font-sans">Tutup</button>
+                  <button onClick={() => setIsDetailOpen(false)} className="w-full py-5 bg-white text-slate-900 rounded-2xl text-[10px] font-normal shadow-2xl active:scale-95 transition-all hover:bg-slate-100 font-sans">Tutup</button>
                </div>
             </div>
           </div>

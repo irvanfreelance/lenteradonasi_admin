@@ -2,20 +2,30 @@ import { NextResponse } from 'next/server';
 import { query, withTransaction } from '@/lib/db';
 import { z } from 'zod';
 
-// Validation schema for creating campaigns
+// Validation schema for creating/updating campaigns
 const campaignSchema = z.object({
   title: z.string().min(5),
   category_id: z.number(),
   slug: z.string().min(3),
-  image_url: z.string().url().optional().nullable(),
+  image_url: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  target_amount: z.number().nullable(),
-  end_date: z.string().nullable(),
+  target_amount: z.number().nullable().optional(),
+  end_date: z.string().nullable().optional(),
+  // Bool flags
   is_zakat: z.boolean().default(false),
   is_qurban: z.boolean().default(false),
   has_no_target: z.boolean().default(false),
+  has_no_time_limit: z.boolean().default(false),
   is_urgent: z.boolean().default(false),
   is_verified: z.boolean().default(true),
+  is_fixed_amount: z.boolean().default(false),
+  is_bundle: z.boolean().default(false),
+  // Numeric
+  minimum_amount: z.number().default(10000),
+  base_commission_pct: z.number().default(0),
+  sort: z.number().default(0),
+  // Suggestion amounts array
+  suggestion_amounts: z.array(z.number()).optional().nullable(),
   status: z.string().default('ACTIVE'),
 });
 

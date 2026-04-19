@@ -7,6 +7,7 @@ interface Column<T> {
   cell?: (item: T, index: number) => React.ReactNode;
   className?: string;
   headerClassName?: string;
+  align?: 'left' | 'center' | 'right';
 }
 
 interface DataTableProps<T> {
@@ -27,16 +28,17 @@ export function DataTable<T>({
   rowClassName
 }: DataTableProps<T>) {
   return (
-    <div className={cn("bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden text-left", className)}>
+    <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden text-left", className)}>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-separate border-spacing-0">
           <thead>
-            <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-bold">
+            <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-semibold">
               {columns.map((col, i) => (
                 <th 
                   key={i} 
                   className={cn(
-                    "px-6 py-5 border-b border-slate-100 font-black tracking-wider uppercase",
+                    "px-6 py-5 border-b border-slate-100 font-bold tracking-wider uppercase",
+                    col.align === 'center' ? "text-center" : col.align === 'right' ? "text-right" : "text-left",
                     col.headerClassName
                   )}
                 >
@@ -64,7 +66,14 @@ export function DataTable<T>({
                   )}
                 >
                   {columns.map((col, j) => (
-                    <td key={j} className={cn("px-6 py-6 text-sm font-medium", col.className)}>
+                    <td 
+                      key={j} 
+                      className={cn(
+                        "px-6 py-6 text-sm font-normal", 
+                        col.align === 'center' ? "text-center" : col.align === 'right' ? "text-right" : "text-left",
+                        col.className
+                      )}
+                    >
                       {col.cell ? col.cell(item, i) : (col.accessorKey ? (item as any)[col.accessorKey] : null)}
                     </td>
                   ))}
@@ -74,7 +83,7 @@ export function DataTable<T>({
               <tr>
                 <td 
                   colSpan={columns.length} 
-                  className="px-8 py-20 text-center text-slate-400 italic font-bold"
+                  className="px-8 py-20 text-center text-slate-400 italic font-semibold"
                 >
                   {emptyMessage}
                 </td>

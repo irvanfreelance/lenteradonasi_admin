@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import useSWR from 'swr';
 import { 
-  Plus, Search, Edit, Trash2, Eye, MoreHorizontal, X, Save, Loader2
+  Plus, Search, Edit, Trash2, Eye, GripVertical, X, Save, Loader2
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -67,16 +67,17 @@ function SortableRow({ camp, idx, offset, formatIDR, router, handleDelete }: any
     <tr 
       ref={setNodeRef} 
       style={style} 
+      onMouseEnter={() => router.prefetch(`/campaigns/${camp.id}`)}
       className={cn(
         "hover:bg-slate-50/50 transition-colors group",
         isDragging && "bg-slate-50 shadow-2xl ring-2 ring-teal-500/20"
       )}
     >
-      <td className="px-6 py-5 text-center text-xs font-bold text-slate-400">
+      <td className="px-6 py-5 text-center text-xs font-normal text-slate-400">
         <div className="flex items-center justify-center gap-1.5">
           <span className="w-4">{offset + idx + 1}</span>
           <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1.5 hover:text-slate-600 transition-colors">
-            <MoreHorizontal size={14} />
+            <GripVertical size={14} />
           </div>
         </div>
       </td>
@@ -89,7 +90,7 @@ function SortableRow({ camp, idx, offset, formatIDR, router, handleDelete }: any
         </div>
       </td>
       <td className="px-6 py-5">
-        <span className="px-3 py-1 rounded-full text-[10px] font-semibold border bg-teal-50 text-teal-600 border-teal-100">
+        <span className="px-3 py-1 rounded-full text-[10px] font-normal border bg-teal-50 text-teal-600 border-teal-100">
           {camp.category_name}
         </span>
       </td>
@@ -98,7 +99,7 @@ function SortableRow({ camp, idx, offset, formatIDR, router, handleDelete }: any
           <div className="flex justify-between items-end">
             <span className="font-semibold text-slate-800 text-sm leading-none">{formatIDR(camp.collected_amount)}</span>
             {camp.target_amount > 0 && (
-              <span className="text-[10px] text-slate-400 font-bold leading-none">
+              <span className="text-[10px] text-slate-400 font-normal leading-none">
                 {Math.min(((camp.collected_amount / camp.target_amount) * 100), 100).toFixed(0)}%
               </span>
             )}
@@ -119,7 +120,7 @@ function SortableRow({ camp, idx, offset, formatIDR, router, handleDelete }: any
       </td>
       <td className="px-6 py-5 text-center">
         <span className={cn(
-          "px-2.5 py-1 rounded-full text-[10px] font-semibold border shadow-sm",
+          "px-2.5 py-1 rounded-full text-[10px] font-normal border shadow-sm",
           camp.status === 'ACTIVE' ? "bg-teal-50 text-teal-700 border-teal-100" :
           camp.status === 'INACTIVE' ? "bg-slate-50 text-slate-400 border-slate-100" :
           "bg-amber-50 text-amber-600 border-amber-100"
@@ -226,7 +227,7 @@ export default function CampaignsPage() {
     });
   };
 
-  if (error) return <div className="p-8 text-rose-500 font-bold bg-rose-50 rounded-2xl border border-rose-100 italic">Error: {error.message}</div>;
+  if (error) return <div className="p-8 text-rose-500 font-normal bg-rose-50 rounded-2xl border border-rose-100 italic">Error: {error.message}</div>;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,7 +265,7 @@ export default function CampaignsPage() {
         </Button>
       </PageHeader>
 
-      <div className="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center">
         <div className="relative flex-1 min-w-[200px] group text-left">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
           <Input 
@@ -303,7 +304,7 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden text-left">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden text-left">
         <div className="overflow-x-auto">
           <DndContext
             sensors={sensors}
@@ -313,13 +314,13 @@ export default function CampaignsPage() {
           >
             <table className="w-full text-left border-separate border-spacing-0">
               <thead>
-                <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-bold">
-                  <th className="px-6 py-4 border-b border-slate-100 font-black w-12 text-center">#</th>
-                  <th className="px-6 py-4 border-b border-slate-100 font-black">Judul Kampanye</th>
-                  <th className="px-6 py-4 border-b border-slate-100 font-black">Kategori</th>
-                  <th className="px-6 py-4 border-b border-slate-100 font-black">Progres Donasi</th>
-                  <th className="px-6 py-4 border-b border-slate-100 text-center font-black">Status</th>
-                  <th className="px-6 py-4 border-b border-slate-100 text-center font-black">Aksi</th>
+                <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-normal">
+                  <th className="px-6 py-4 border-b border-slate-100 font-bold w-12 text-center">#</th>
+                  <th className="px-6 py-4 border-b border-slate-100 font-bold">Judul Kampanye</th>
+                  <th className="px-6 py-4 border-b border-slate-100 font-bold">Kategori</th>
+                  <th className="px-6 py-4 border-b border-slate-100 font-bold">Progres Donasi</th>
+                  <th className="px-6 py-4 border-b border-slate-100 text-center font-bold">Status</th>
+                  <th className="px-6 py-4 border-b border-slate-100 text-center font-bold">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -363,28 +364,29 @@ export default function CampaignsPage() {
           offset={offset}
           limit={limit}
           onPageChange={setPage}
+          onLimitChange={(newLimit) => { setLimit(newLimit); setPage(1); }}
           isLoading={isLoading}
         />
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h2 className="text-xl font-black text-slate-800 tracking-tight">{selectedCamp ? 'Edit kampanye' : 'Kampanye baru'}</h2>
+              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{selectedCamp ? 'Edit kampanye' : 'Kampanye baru'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white rounded-full transition-all text-slate-400"><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-8 grid grid-cols-2 gap-5 max-h-[70vh] overflow-y-auto">
               <div className="col-span-2 text-left">
-                <label className="block text-[10px] font-bold text-slate-500 mb-2">Judul kampanye</label>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-2">Judul kampanye</label>
                 <input required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
               </div>
               <div className="text-left">
-                <label className="block text-[10px] font-bold text-slate-500 mb-2">Slug URL</label>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-2">Slug URL</label>
                 <input required value={formData.slug} onChange={(e) => setFormData({...formData, slug: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
               </div>
               <div className="text-left">
-                <label className="block text-[10px] font-bold text-slate-500 mb-2">Kategori</label>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-2">Kategori</label>
                 <SearchableSelect 
                   value={formData.category_id}
                   onChange={(val) => setFormData({...formData, category_id: Number(val)})}
@@ -392,24 +394,24 @@ export default function CampaignsPage() {
                 />
               </div>
               <div className="text-left">
-                <label className="block text-[10px] font-bold text-slate-500 mb-2">Target dana (opsional)</label>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-2">Target dana (opsional)</label>
                 <input type="number" value={formData.target_amount} onChange={(e) => setFormData({...formData, target_amount: parseFloat(e.target.value)})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
               </div>
               <div className="text-left">
-                <label className="block text-[10px] font-bold text-slate-500 mb-2">Tanggal berakhir</label>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-2">Tanggal berakhir</label>
                 <input type="date" value={formData.end_date} onChange={(e) => setFormData({...formData, end_date: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
               </div>
               <div className="col-span-2 flex flex-wrap gap-4 pt-2">
                 {['is_zakat', 'is_qurban', 'has_no_target', 'is_urgent'].map((field) => (
                   <label key={field} className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-100 flex-1 min-w-[120px]">
                     <input type="checkbox" checked={(formData as any)[field]} onChange={(e) => setFormData({...formData, [field]: e.target.checked})} className="w-4 h-4 text-teal-600 rounded border-slate-300" />
-                    <span className="text-[10px] font-bold text-slate-600">{field.replace(/_/g, ' ')}</span>
+                    <span className="text-[10px] font-semibold text-slate-600">{field.replace(/_/g, ' ')}</span>
                   </label>
                 ))}
               </div>
               <div className="col-span-2 pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 px-6 rounded-2xl text-sm font-black text-slate-400 hover:bg-slate-50 transition-all font-sans">Batal</button>
-                <button disabled={isSubmitting} className="flex-[2] bg-teal-600 text-white py-4 px-6 rounded-2xl text-sm font-black shadow-xl shadow-teal-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 font-sans">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 px-6 rounded-2xl text-sm font-bold text-slate-400 hover:bg-slate-50 transition-all font-sans">Batal</button>
+                <button disabled={isSubmitting} className="flex-[2] bg-teal-600 text-white py-4 px-6 rounded-2xl text-sm font-bold shadow-xl shadow-teal-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 font-sans">
                   {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Simpan kampanye
                 </button>
               </div>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, withTransaction } from '@/lib/db';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -52,12 +52,79 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const updatesSql = `SELECT * FROM campaign_updates WHERE campaign_id = $1 ORDER BY created_at DESC`;
     const updatesRes = await query(updatesSql, [id]);
 
+    // 5. Fetch Variants
+    const variantsSql = `SELECT * FROM campaign_variants WHERE campaign_id = $1 ORDER BY price ASC`;
+    const variantsRes = await query(variantsSql, [id]);
+
+    // 6. Fetch Bundles
+    const bundlesSql = `
+      SELECT cb.*, c.title as item_title 
+      FROM campaign_bundles cb
+      JOIN campaigns c ON cb.item_campaign_id = c.id
+      WHERE cb.bundle_campaign_id = $1
+    `;
+    const bundlesRes = await query(bundlesSql, [id]);
+
+    // 7. Fetch QRIS Static
+    const qrisSql = `SELECT * FROM campaign_qris_static WHERE campaign_id = $1`;
+    const qrisRes = await query(qrisSql, [id]);
+
     return NextResponse.json({
       ...campaign,
       chartData: chartRes.rows,
       transactions: trxRes.rows,
-      updates: updatesRes.rows
+      updates: updatesRes.rows,
+      variants: variantsRes.rows,
+      bundles: bundlesRes.rows,
+      qris_static: qrisRes.rows
     });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { variants, bundles, qris_static } = body;
+
+    await withTransaction(async (client) => {
+      // Manage Variants
+      if (variants) {
+        await client.query('DELETE FROM campaign_variants WHERE campaign_id = $1', [id]);
+        if (variants.length > 0) {
+          const vSql = 'INSERT INTO campaign_variants (campaign_id, name, price, names_per_qty, stock_limit, is_active) VALUES ($1, $2, $3, $4, $5, $6)';
+          for (const v of variants) {
+            await client.query(vSql, [id, v.name, v.price, v.names_per_qty || 1, v.stock_limit || null, v.is_active ?? true]);
+          }
+        }
+      }
+
+      // Manage Bundles
+      if (bundles) {
+        await client.query('DELETE FROM campaign_bundles WHERE bundle_campaign_id = $1', [id]);
+        if (bundles.length > 0) {
+          const bSql = 'INSERT INTO campaign_bundles (bundle_campaign_id, item_campaign_id, qty) VALUES ($1, $2, $3)';
+          for (const b of bundles) {
+            await client.query(bSql, [id, b.item_campaign_id, b.qty || 1]);
+          }
+        }
+      }
+
+      // Manage QRIS Static
+      if (qris_static) {
+        await client.query('DELETE FROM campaign_qris_static WHERE campaign_id = $1', [id]);
+        if (qris_static.length > 0) {
+          const qSql = 'INSERT INTO campaign_qris_static (campaign_id, external_id, qris_string, status) VALUES ($1, $2, $3, $4)';
+          for (const q of qris_static) {
+            await client.query(qSql, [id, q.external_id, q.qris_string, q.status || 'ACTIVE']);
+          }
+        }
+      }
+    });
+
+    return NextResponse.json({ success: true, message: 'Data berelasi berhasil disimpan.'});
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
