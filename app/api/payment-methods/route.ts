@@ -28,6 +28,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { code, name, logo_url, type, provider, admin_fee_flat, admin_fee_pct, is_active, is_redirect } = body;
 
+    // Sync sequence to avoid PK collision when rows were seeded with explicit IDs
+    await query(`SELECT setval('payment_methods_id_seq', COALESCE((SELECT MAX(id) FROM payment_methods), 0))`);
+
     // Get max sort
     const maxSortRes = await query('SELECT MAX(sort_order) as max_sort FROM payment_methods');
     const sort_order = (maxSortRes.rows[0]?.max_sort || 0) + 1;
@@ -40,6 +43,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error: any) {
+    console.error('[POST /api/payment-methods]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

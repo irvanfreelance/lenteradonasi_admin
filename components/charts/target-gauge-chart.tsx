@@ -12,7 +12,7 @@ export default function TargetGaugeChart({ value, max, color = '#14b8a6' }: { va
 
   return (
     <div className="w-full h-[200px] relative flex flex-col items-center justify-center">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minHeight={200}>
         <PieChart>
           <Pie
             data={data}

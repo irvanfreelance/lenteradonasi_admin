@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import { useRouter } from 'next/navigation';
-import { 
-  Plus, Search, Edit, Trash2, X, Save, GripVertical, FileText, Loader2, Image as ImageIcon 
+import {
+  Plus, Search, Edit, Trash2, X, Save, GripVertical, FileText, Loader2, Image as ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -52,9 +52,9 @@ function SortableRow({ item, onEdit, onDelete, onInstructions }: { item: any, on
   };
 
   return (
-    <tr 
-      ref={setNodeRef} 
-      style={style} 
+    <tr
+      ref={setNodeRef}
+      style={style}
       className={cn(
         "hover:bg-slate-50/50 transition-colors group bg-white",
         isDragging && "shadow-xl border-indigo-500 scale-[1.01]"
@@ -84,7 +84,7 @@ function SortableRow({ item, onEdit, onDelete, onInstructions }: { item: any, on
         <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none">{item.provider}</Badge>
       </td>
       <td className="px-6 py-5">
-         <Badge variant="destructive" className="bg-rose-50 text-rose-600 border-none">{item.type}</Badge>
+        <Badge variant="destructive" className="bg-rose-50 text-rose-600 border-none">{item.type}</Badge>
       </td>
       <td className="px-6 py-5">
         <div className="flex flex-col items-start gap-1">
@@ -108,9 +108,9 @@ export default function PaymentChannelsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  
+
   const { data: remoteData, error, isLoading } = useSWR(`/api/payment-methods?search=${search}`, fetcher);
-  
+
   const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
@@ -127,13 +127,15 @@ export default function PaymentChannelsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [formData, setFormData] = useState<{
-    code: string, name: string, logo_url: string, type: string, provider: string, 
+    code: string, name: string, logo_url: string, type: string, provider: string,
     is_active: boolean, is_redirect: boolean, logo_file: File | null
-  }>({ 
-    code: '', name: '', logo_url: '', type: 'Bank Transfer', provider: 'Moota', 
-    is_active: true, is_redirect: false, logo_file: null 
+  }>({
+    code: '', name: '', logo_url: '', type: 'Bank Transfer', provider: 'Moota',
+    is_active: true, is_redirect: false, logo_file: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -145,7 +147,7 @@ export default function PaymentChannelsPage() {
     if (active.id !== over.id) {
       const oldIndex = items.findIndex((i) => i.id === active.id);
       const newIndex = items.findIndex((i) => i.id === over.id);
-      
+
       const newItems = arrayMove(items, oldIndex, newIndex).map((item, index) => ({
         ...item,
         sort_order: index + 1
@@ -167,11 +169,12 @@ export default function PaymentChannelsPage() {
 
   const handleOpenModal = (item: any = null) => {
     setSelectedItem(item);
+    setPreviewUrl(null);
     if (item) {
-      setFormData({ 
-        code: item.code, 
-        name: item.name, 
-        logo_url: item.logo_url || '', 
+      setFormData({
+        code: item.code,
+        name: item.name,
+        logo_url: item.logo_url || '',
         type: item.type,
         provider: item.provider,
         is_active: item.is_active,
@@ -179,12 +182,26 @@ export default function PaymentChannelsPage() {
         logo_file: null
       });
     } else {
-      setFormData({ 
-        code: '', name: '', logo_url: '', type: 'Bank Transfer', provider: 'Moota', 
-        is_active: true, is_redirect: false, logo_file: null 
+      setFormData({
+        code: '', name: '', logo_url: '', type: 'Bank Transfer', provider: 'Moota',
+        is_active: true, is_redirect: false, logo_file: null
       });
     }
     setIsModalOpen(true);
+  };
+
+  const handleFileChange = (file: File | null) => {
+    if (!file) return;
+    // revoke previous object URL to prevent memory leak
+    if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(file));
+    setFormData((prev) => ({ ...prev, logo_file: file }));
+  };
+
+  const handleClearLogo = () => {
+    if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setFormData((prev) => ({ ...prev, logo_url: '', logo_file: null }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -196,7 +213,7 @@ export default function PaymentChannelsPage() {
         toast('Mengupload gambar ke server...');
         const fileForm = new FormData();
         fileForm.append('file', formData.logo_file);
-        
+
         // Use normal body or fetch directly for Vercel Blob
         // Note: API expects filename query param and body=file
         const response = await fetch(`/api/upload?filename=${formData.logo_file.name}`, {
@@ -211,7 +228,7 @@ export default function PaymentChannelsPage() {
       const method = selectedItem ? 'PATCH' : 'POST';
       const { logo_file, ...restData } = formData;
       const body = selectedItem ? { id: selectedItem.id, ...restData, logo_url: finalLogoUrl } : { ...restData, logo_url: finalLogoUrl };
-      
+
       const res = await fetch('/api/payment-methods', {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -251,8 +268,8 @@ export default function PaymentChannelsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-left">
       <div className="flex justify-between items-end mb-8">
-        <PageHeader 
-          title="Payment Channels" 
+        <PageHeader
+          title="Payment Channels"
           description="Kelola metode pembayaran dan integrasinya"
           className="mb-0 text-left"
         />
@@ -265,19 +282,19 @@ export default function PaymentChannelsPage() {
         <h3 className="text-lg font-bold text-slate-800 tracking-tight">Cari Payment Channel</h3>
         <div className="relative group text-left max-w-full">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-          <Input 
-            type="text" 
-            placeholder="Cari berdasarkan nama, code, vendor, atau category..." 
+          <Input
+            type="text"
+            placeholder="Cari berdasarkan nama, code, vendor, atau category..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-12 py-6 rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500" 
+            className="pl-12 py-6 rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden text-left">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-           <h3 className="text-lg font-bold text-slate-800 tracking-tight">Daftar Payment Channels ({items.length})</h3>
+          <h3 className="text-lg font-bold text-slate-800 tracking-tight">Daftar Payment Channels ({items.length})</h3>
         </div>
         <div className="overflow-x-auto">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -299,11 +316,11 @@ export default function PaymentChannelsPage() {
                     [...Array(3)].map((_, i) => <tr key={i} className="animate-pulse"><td colSpan={7} className="h-20 px-6 py-5 bg-slate-50/20"></td></tr>)
                   ) : paginatedItems.length > 0 ? (
                     paginatedItems.map((item) => (
-                      <SortableRow 
-                        key={item.id} 
-                        item={item} 
-                        onEdit={handleOpenModal} 
-                        onDelete={handleDelete} 
+                      <SortableRow
+                        key={item.id}
+                        item={item}
+                        onEdit={handleOpenModal}
+                        onDelete={handleDelete}
                         onInstructions={(id: number) => router.push(`/payment-channels/${id}/instructions`)}
                       />
                     ))
@@ -316,7 +333,7 @@ export default function PaymentChannelsPage() {
           </DndContext>
         </div>
         {!isLoading && totalCount > limit && (
-          <Pagination 
+          <Pagination
             currentPage={page}
             totalPages={totalPages}
             totalCount={totalCount}
@@ -337,25 +354,25 @@ export default function PaymentChannelsPage() {
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400"><X size={20} /></button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-800">Payment Code *</label>
-                  <Input required value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})} placeholder="E.g. 1080011701" className="h-12 bg-slate-50 font-mono" />
+                  <Input required value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} placeholder="E.g. 1080011701" className="h-12 bg-slate-50 font-mono" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-800">Payment Name *</label>
-                  <Input required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="E.g. Transfer Muamalat" className="h-12 bg-slate-50" />
+                  <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="E.g. Transfer Muamalat" className="h-12 bg-slate-50" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-800">Vendor</label>
-                  <SearchableSelect 
+                  <SearchableSelect
                     value={formData.provider}
-                    onChange={(val) => setFormData({...formData, provider: String(val)})}
+                    onChange={(val) => setFormData({ ...formData, provider: String(val) })}
                     options={[
                       { id: 'Moota', name: 'Moota' },
                       { id: 'Faspay', name: 'Faspay' },
@@ -366,14 +383,14 @@ export default function PaymentChannelsPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-800">Category</label>
-                  <SearchableSelect 
+                  <SearchableSelect
                     value={formData.type}
-                    onChange={(val) => setFormData({...formData, type: String(val)})}
+                    onChange={(val) => setFormData({ ...formData, type: String(val) })}
                     options={[
-                      { id: 'Bank_transfer', name: 'Bank Transfer' },
-                      { id: 'Ewallet', name: 'E-Wallet' },
-                      { id: 'Qris_statis', name: 'QRIS Statis' },
-                      { id: 'Va', name: 'Virtual Account' }
+                      { id: 'Bank Transfer', name: 'Bank Transfer' },
+                      { id: 'E-Wallet', name: 'E-Wallet' },
+                      { id: 'Virtual Account', name: 'Virtual Account' },
+                      { id: 'QRIS', name: 'QRIS' },
                     ]}
                   />
                 </div>
@@ -381,25 +398,61 @@ export default function PaymentChannelsPage() {
 
               <div className="space-y-3">
                 <label className="text-sm font-bold text-slate-800">Logo Payment Channel</label>
-                <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center relative overflow-hidden">
-                   {formData.logo_url ? (
-                     <>
-                        <div className="w-full h-32 flex items-center justify-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 relative group">
-                           <img src={formData.logo_url} alt="Logo Preview" className="max-h-full max-w-full object-contain" />
-                           <button type="button" onClick={() => setFormData({...formData, logo_url: '', logo_file: null})} className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                             <X size={14} />
-                           </button>
-                        </div>
-                     </>
-                   ) : (
-                     <FileUpload 
-                       value={formData.logo_url} 
-                       onChange={(val) => setFormData({...formData, logo_url: val})} 
-                       deferred
-                       onFileSelect={(file) => setFormData({...formData, logo_file: file})}
-                     />
-                   )}
-                </div>
+
+                {/* Hidden native file input for re-picking */}
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+                />
+
+                {(previewUrl || formData.logo_url) ? (
+                  <div className="relative group w-full h-36 bg-white border-2 border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden">
+                    <img
+                      src={previewUrl || formData.logo_url}
+                      alt="Logo Preview"
+                      className="max-h-full max-w-full object-contain p-4"
+                    />
+                    {/* Ganti Gambar overlay */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-800 text-xs font-semibold rounded-lg shadow hover:bg-slate-100 transition-colors"
+                      >
+                        <ImageIcon size={13} /> Ganti Gambar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearLogo}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 text-white text-xs font-semibold rounded-lg shadow hover:bg-rose-600 transition-colors"
+                      >
+                        <X size={13} /> Hapus
+                      </button>
+                    </div>
+                    {/* Filename badge (only for local file not yet uploaded) */}
+                    {formData.logo_file && !formData.logo_url && (
+                      <span className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-medium px-2 py-0.5 rounded-full truncate max-w-[80%]">
+                        {formData.logo_file.name}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => logoInputRef.current?.click()}
+                    className="p-6 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                      <ImageIcon size={22} className="text-slate-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-slate-600">Upload gambar atau file</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Max 4.5MB • PNG, JPG, WEBP</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-8 py-2">

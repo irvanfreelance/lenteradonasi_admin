@@ -21,7 +21,7 @@ interface DataPoint {
 export default function RevenueLineChart({ data }: { data: DataPoint[] }) {
   return (
     <div className="w-full h-[300px]">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minHeight={300}>
         <AreaChart
           data={data}
           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
