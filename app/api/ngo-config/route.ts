@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { redis } from '@/lib/redis';
 import { z } from 'zod';
 
 const configSchema = z.object({
@@ -46,6 +47,7 @@ export async function PATCH(req: Request) {
       res = await query(sql, [validated.ngo_name, validated.logo_url, validated.short_description, validated.address, validated.primary_color]);
     }
     
+    await redis.flushdb();
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
     if (error instanceof z.ZodError) {

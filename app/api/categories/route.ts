@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { redis } from '@/lib/redis';
 import { z } from 'zod';
 
 const categorySchema = z.object({
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
       RETURNING *
     `;
     const res = await query(sql, [validated.name, validated.color_theme, validated.is_active]);
+    await redis.flushdb();
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -81,6 +83,7 @@ export async function PATCH(req: Request) {
 
     const sql = `UPDATE categories SET ${setClause} WHERE id = $${params.length} RETURNING *`;
     const res = await query(sql, params);
+    await redis.flushdb();
 
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
@@ -103,6 +106,7 @@ export async function DELETE(req: Request) {
     }
 
     await query('DELETE FROM categories WHERE id = $1', [id]);
+    await redis.flushdb();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

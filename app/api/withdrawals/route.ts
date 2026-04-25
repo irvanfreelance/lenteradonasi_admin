@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { redis } from '@/lib/redis';
 import { z } from 'zod';
 
 const withdrawalSchema = z.object({
@@ -80,6 +81,8 @@ export async function POST(req: Request) {
       RETURNING *
     `;
     const res = await query(sql, [validated.affiliate_id, validated.amount, validated.bank_account_info, validated.status]);
+    
+    await redis.flushdb();
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -113,6 +116,7 @@ export async function PATCH(req: Request) {
        await query('UPDATE withdrawals SET processed_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
     }
 
+    await redis.flushdb();
     return NextResponse.json(updateRes.rows[0]);
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -127,6 +131,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     await query('DELETE FROM withdrawals WHERE id = $1', [id]);
+    await redis.flushdb();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

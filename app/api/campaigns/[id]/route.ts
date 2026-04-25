@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query, withTransaction } from '@/lib/db';
+import { redis } from '@/lib/redis';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -123,6 +124,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         }
       }
     });
+
+    await redis.flushdb();
 
     return NextResponse.json({ success: true, message: 'Data berelasi berhasil disimpan.'});
   } catch (error: any) {

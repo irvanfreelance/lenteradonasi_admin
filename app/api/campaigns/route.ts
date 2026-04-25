@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query, withTransaction } from '@/lib/db';
+import { redis } from '@/lib/redis';
 import { z } from 'zod';
 
 // Validation schema for creating/updating campaigns
@@ -132,6 +133,8 @@ export async function POST(req: Request) {
       await client.query('INSERT INTO campaign_stats (campaign_id) VALUES ($1)', [newId]);
       return newId;
     });
+    
+    await redis.flushdb();
 
     return NextResponse.json({ id: result }, { status: 201 });
   } catch (error: any) {
@@ -158,6 +161,8 @@ export async function PATCH(req: Request) {
 
     const sql = `UPDATE campaigns SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $${params.length} RETURNING *`;
     const res = await query(sql, params);
+    
+    await redis.flushdb();
 
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
@@ -173,6 +178,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     await query('DELETE FROM campaigns WHERE id = $1', [id]);
+    await redis.flushdb();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

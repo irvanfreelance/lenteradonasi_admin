@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withTransaction } from '@/lib/db';
+import { redis } from '@/lib/redis';
 
 export async function POST(req: Request) {
   try {
@@ -11,6 +12,8 @@ export async function POST(req: Request) {
         await client.query('UPDATE campaigns SET sort = $1 WHERE id = $2', [item.sort, item.id]);
       }
     });
+
+    await redis.flushdb();
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

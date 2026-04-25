@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { redis } from '@/lib/redis';
 
 export async function GET(req: Request) {
   try {
@@ -38,6 +39,8 @@ export async function POST(req: Request) {
       [payment_method_id, title, content, sort_order]
     );
 
+    await redis.flushdb();
+
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -53,6 +56,7 @@ export async function PATCH(req: Request) {
       await Promise.all(body.map(item => 
         query('UPDATE payment_instructions SET sort_order = $1 WHERE id = $2', [item.sort_order, item.id])
       ));
+      await redis.flushdb();
       return NextResponse.json({ message: 'Reordered successfully' });
     }
 
@@ -64,6 +68,8 @@ export async function PATCH(req: Request) {
        WHERE id = $3 RETURNING *`,
       [title, content, id]
     );
+
+    await redis.flushdb();
 
     return NextResponse.json(result.rows[0]);
   } catch (error: any) {
@@ -79,6 +85,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     await query('DELETE FROM payment_instructions WHERE id = $1', [id]);
+    await redis.flushdb();
     return NextResponse.json({ message: 'Deleted successfully' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
