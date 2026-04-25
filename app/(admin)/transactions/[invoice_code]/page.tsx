@@ -184,6 +184,17 @@ export default function TransactionDetailPage() {
                      <div className="flex items-center gap-2 text-sm text-slate-500"><Phone size={14} className="text-slate-400" /> {trx.donor_phone}</div>
                   )}
                </div>
+
+               {trx.doa && (
+                  <div className="mt-6 pt-6 border-t border-slate-100">
+                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <MessageSquare size={12} className="text-indigo-400" /> Doa / Pesan Donatur
+                     </h4>
+                     <p className="text-sm text-slate-700 italic bg-slate-50 p-4 rounded-xl border border-slate-100 leading-relaxed">
+                        "{trx.doa}"
+                     </p>
+                  </div>
+               )}
             </div>
 
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">

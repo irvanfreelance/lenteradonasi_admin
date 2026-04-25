@@ -304,6 +304,7 @@ CREATE TABLE "public"."invoices" (
     "is_email_checkout_sent" bool DEFAULT false,
     "is_email_paid_sent" bool DEFAULT false,
     "is_ads_sent" bool DEFAULT false,
+    "doa" text,
     PRIMARY KEY ("id","created_at")
 );
 
@@ -341,6 +342,7 @@ CREATE TABLE "public"."invoices_y2026m10" (
     "is_email_checkout_sent" bool DEFAULT false,
     "is_email_paid_sent" bool DEFAULT false,
     "is_ads_sent" bool DEFAULT false,
+    "doa" text,
     PRIMARY KEY ("id","created_at")
 );
 
@@ -566,29 +568,73 @@ INSERT INTO "public"."donors" ("id", "name", "email", "phone", "is_anonymous_def
 (2, 'Budi Santoso', 'budi.s@email.com', '08567890123', 'f', '2026-04-19 01:39:51.048594+00'),
 (3, 'Siti Aminah', 'siti@email.com', '08198765432', 'f', '2026-04-19 01:39:51.048594+00');
 
-INSERT INTO "public"."invoices" ("id", "invoice_code", "donor_id", "payment_method_id", "donor_name_snapshot", "donor_email", "donor_phone", "is_anonymous", "base_amount", "admin_fee", "total_amount", "fb_click_id", "fb_browser_id", "tiktok_click_id", "google_click_id", "client_ip_address", "client_user_agent", "status", "va_number", "payment_url", "qris_dynamic", "xendit_payment_request_id", "created_at", "paid_at") VALUES
-(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, 'f', 100000, 0, 100000, 'fb.1.123abc456', NULL, NULL, NULL, '192.168.1.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)', 'PAID', NULL, NULL, NULL, NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00'),
-(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, 't', 500000, 4000, 504000, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NULL, NULL, NULL, NULL, '2026-10-12 15:10:00+00', NULL),
-(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, 'f', 21000000, 4000, 21004000, NULL, NULL, 'tiktok.abc.123', NULL, '114.120.10.15', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'PAID', NULL, NULL, NULL, NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00'),
-(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, 'f', 5000000, 4000, 5004000, NULL, NULL, NULL, NULL, NULL, NULL, 'PAID', NULL, NULL, NULL, NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00');
+INSERT INTO "public"."invoices" ("id", "invoice_code", "donor_id", "payment_method_id", "donor_name_snapshot", "donor_email", "donor_phone", "is_anonymous", "base_amount", "admin_fee", "total_amount", "status", "va_number", "created_at", "paid_at", "doa") VALUES
+(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, 'f', 100000, 0, 100000, 'PAID', NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00', NULL),
+(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, 't', 500000, 4000, 504000, 'PENDING', NULL, '2026-10-12 15:10:00+00', NULL, NULL),
+(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, 'f', 21000000, 4000, 21004000, 'PAID', NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00', NULL),
+(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, 'f', 5000000, 4000, 5004000, 'PAID', NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00', NULL),
+(5, 'INV-20261025-A001', 1, 2, 'Andi Dermawan', 'andi@email.com', '08123456789', 'f', 150000, 4000, 154000, 'PAID', '807708123456789', '2026-10-25 08:00:00+00', '2026-10-25 08:05:00+00', 'Semoga Adik Rina cepat sembuh dan bisa sekolah lagi, semangat terus ya dek!'),
+(6, 'INV-20261025-A002', 2, 3, 'Budi Santoso', 'budi.s@email.com', '08567890123', 'f', 250000, 4000, 254000, 'PAID', '888808567890123', '2026-10-25 09:00:00+00', '2026-10-25 09:10:00+00', 'Semoga pembangunan sekolah di NTT lancar dan jadi amal jariyah untuk kita semua.'),
+(7, 'INV-20261025-A003', NULL, 5, 'Hamba Allah', NULL, NULL, 't', 100000, 0, 100000, 'PAID', NULL, '2026-10-25 10:00:00+00', '2026-10-25 10:02:00+00', 'Semoga saudara kita korban banjir diberi ketabahan dan kekuatan.'),
+(8, 'INV-20261025-A004', 3, 1, 'Siti Aminah', 'siti@email.com', '08198765432', 'f', 35000, 0, 35000, 'PAID', NULL, '2026-10-25 11:00:00+00', '2026-10-25 11:05:00+00', 'Semoga nasi box ini berkah untuk yang menerima.'),
+(9, 'INV-20261025-A005', 1, 2, 'Andi Dermawan', 'andi@email.com', '08123456789', 'f', 1000000, 4000, 1004000, 'PAID', '807708123456789', '2026-10-25 12:00:00+00', '2026-10-25 12:15:00+00', 'Zakat maal untuk membersihkan harta tahun ini.'),
+(10, 'INV-20261025-A006', 2, 5, 'Budi Santoso', 'budi.s@email.com', '08567890123', 'f', 2500000, 0, 2500000, 'PAID', NULL, '2026-10-25 13:00:00+00', '2026-10-25 13:10:00+00', 'Bismillah, qurban kambing atas nama Bapak Budi Santoso.'),
+(11, 'INV-20261025-A007', 3, 5, 'Siti Aminah', 'siti@email.com', '08198765432', 'f', 3000000, 0, 3000000, 'PAID', NULL, '2026-10-25 14:00:00+00', '2026-10-25 14:10:00+00', 'Patungan qurban sapi, semoga bermanfaat untuk warga pedalaman.'),
+(12, 'INV-20261025-A008', NULL, 5, 'Anonim', NULL, NULL, 't', 21000000, 0, 21000000, 'PAID', NULL, '2026-10-25 15:00:00+00', '2026-10-25 15:20:00+00', 'Qurban 1 ekor sapi utuh untuk kebaikan bersama.'),
+(13, 'INV-20261025-A009', 1, 1, 'Andi Dermawan', 'andi@email.com', '08123456789', 'f', 50000, 0, 50000, 'PAID', NULL, '2026-10-25 16:00:00+00', '2026-10-25 16:05:00+00', 'Sedikit infaq untuk operasional yayasan.'),
+(14, 'INV-20261025-A010', 2, 2, 'Budi Santoso', 'budi.s@email.com', '08567890123', 'f', 415000, 4000, 419000, 'PAID', '807708567890123', '2026-10-25 17:00:00+00', '2026-10-25 17:15:00+00', 'Paket kado yatim, semoga mereka bahagia di hari lebaran.'),
+(15, 'INV-20261025-A011', 3, 3, 'Siti Aminah', 'siti@email.com', '08198765432', 'f', 500000, 4000, 504000, 'PAID', '888808198765432', '2026-10-25 18:00:00+00', '2026-10-25 18:10:00+00', 'Untuk pembangunan masjid Al-Ikhlas, semoga segera tegak berdiri.');
 
-INSERT INTO "public"."invoices_y2026m10" ("id", "invoice_code", "donor_id", "payment_method_id", "donor_name_snapshot", "donor_email", "donor_phone", "is_anonymous", "base_amount", "admin_fee", "total_amount", "fb_click_id", "fb_browser_id", "tiktok_click_id", "google_click_id", "client_ip_address", "client_user_agent", "status", "va_number", "payment_url", "qris_dynamic", "xendit_payment_request_id", "created_at", "paid_at") VALUES
-(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, 'f', 100000, 0, 100000, 'fb.1.123abc456', NULL, NULL, NULL, '192.168.1.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)', 'PAID', NULL, NULL, NULL, NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00'),
-(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, 't', 500000, 4000, 504000, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NULL, NULL, NULL, NULL, '2026-10-12 15:10:00+00', NULL),
-(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, 'f', 21000000, 4000, 21004000, NULL, NULL, 'tiktok.abc.123', NULL, '114.120.10.15', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'PAID', NULL, NULL, NULL, NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00'),
-(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, 'f', 5000000, 4000, 5004000, NULL, NULL, NULL, NULL, NULL, NULL, 'PAID', NULL, NULL, NULL, NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00');
+INSERT INTO "public"."invoices_y2026m10" ("id", "invoice_code", "donor_id", "payment_method_id", "donor_name_snapshot", "donor_email", "donor_phone", "is_anonymous", "base_amount", "admin_fee", "total_amount", "status", "va_number", "created_at", "paid_at", "doa") VALUES
+(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, 'f', 100000, 0, 100000, 'PAID', NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00', NULL),
+(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, 't', 500000, 4000, 504000, 'PENDING', NULL, '2026-10-12 15:10:00+00', NULL, NULL),
+(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, 'f', 21000000, 4000, 21004000, 'PAID', NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00', NULL),
+(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, 'f', 5000000, 4000, 5004000, 'PAID', NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00', NULL),
+(5, 'INV-20261025-A001', 1, 2, 'Andi Dermawan', 'andi@email.com', '08123456789', 'f', 150000, 4000, 154000, 'PAID', '807708123456789', '2026-10-25 08:00:00+00', '2026-10-25 08:05:00+00', 'Semoga Adik Rina cepat sembuh dan bisa sekolah lagi, semangat terus ya dek!'),
+(6, 'INV-20261025-A002', 2, 3, 'Budi Santoso', 'budi.s@email.com', '08567890123', 'f', 250000, 4000, 254000, 'PAID', '888808567890123', '2026-10-25 09:00:00+00', '2026-10-25 09:10:00+00', 'Semoga pembangunan sekolah di NTT lancar dan jadi amal jariyah untuk kita semua.'),
+(7, 'INV-20261025-A003', NULL, 5, 'Hamba Allah', NULL, NULL, 't', 100000, 0, 100000, 'PAID', NULL, '2026-10-25 10:00:00+00', '2026-10-25 10:02:00+00', 'Semoga saudara kita korban banjir diberi ketabahan dan kekuatan.'),
+(8, 'INV-20261025-A004', 3, 1, 'Siti Aminah', 'siti@email.com', '08198765432', 'f', 35000, 0, 35000, 'PAID', NULL, '2026-10-25 11:00:00+00', '2026-10-25 11:05:00+00', 'Semoga nasi box ini berkah untuk yang menerima.'),
+(9, 'INV-20261025-A005', 1, 2, 'Andi Dermawan', 'andi@email.com', '08123456789', 'f', 1000000, 4000, 1004000, 'PAID', '807708123456789', '2026-10-25 12:00:00+00', '2026-10-25 12:15:00+00', 'Zakat maal untuk membersihkan harta tahun ini.'),
+(10, 'INV-20261025-A006', 2, 5, 'Budi Santoso', 'budi.s@email.com', '08567890123', 'f', 2500000, 0, 2500000, 'PAID', NULL, '2026-10-25 13:00:00+00', '2026-10-25 13:10:00+00', 'Bismillah, qurban kambing atas nama Bapak Budi Santoso.'),
+(11, 'INV-20261025-A007', 3, 5, 'Siti Aminah', 'siti@email.com', '08198765432', 'f', 3000000, 0, 3000000, 'PAID', NULL, '2026-10-25 14:00:00+00', '2026-10-25 14:10:00+00', 'Patungan qurban sapi, semoga bermanfaat untuk warga pedalaman.'),
+(12, 'INV-20261025-A008', NULL, 5, 'Anonim', NULL, NULL, 't', 21000000, 0, 21000000, 'PAID', NULL, '2026-10-25 15:00:00+00', '2026-10-25 15:20:00+00', 'Qurban 1 ekor sapi utuh untuk kebaikan bersama.'),
+(13, 'INV-20261025-A009', 1, 1, 'Andi Dermawan', 'andi@email.com', '08123456789', 'f', 50000, 0, 50000, 'PAID', NULL, '2026-10-25 16:00:00+00', '2026-10-25 16:05:00+00', 'Sedikit infaq untuk operasional yayasan.'),
+(14, 'INV-20261025-A010', 2, 2, 'Budi Santoso', 'budi.s@email.com', '08567890123', 'f', 415000, 4000, 419000, 'PAID', '807708567890123', '2026-10-25 17:00:00+00', '2026-10-25 17:15:00+00', 'Paket kado yatim, semoga mereka bahagia di hari lebaran.'),
+(15, 'INV-20261025-A011', 3, 3, 'Siti Aminah', 'siti@email.com', '08198765432', 'f', 500000, 4000, 504000, 'PAID', '888808198765432', '2026-10-25 18:00:00+00', '2026-10-25 18:10:00+00', 'Untuk pembangunan masjid Al-Ikhlas, semoga segera tegak berdiri.');
 
-INSERT INTO "public"."transactions" ("id", "invoice_id", "invoice_created_at", "campaign_id", "bundle_campaign_id", "variant_id", "affiliate_id", "qty", "amount", "affiliate_commission", "created_at") VALUES
-(1, 1, '2026-10-12 14:30:00+00', 1, NULL, NULL, NULL, 1, 100000, 0, '2026-10-12 14:30:00+00'),
-(2, 2, '2026-10-12 15:10:00+00', 5, NULL, NULL, NULL, 1, 500000, 0, '2026-10-12 15:10:00+00'),
-(3, 3, '2026-10-12 16:05:00+00', 8, NULL, 4, NULL, 1, 21000000, 0, '2026-10-12 16:05:00+00'),
-(4, 4, '2026-10-11 09:15:00+00', 11, NULL, NULL, NULL, 1, 5000000, 0, '2026-10-11 09:15:00+00');
+INSERT INTO "public"."transactions" ("id", "invoice_id", "invoice_created_at", "campaign_id", "qty", "amount", "created_at") VALUES
+(1, 1, '2026-10-12 14:30:00+00', 1, 1, 100000, '2026-10-12 14:30:00+00'),
+(2, 2, '2026-10-12 15:10:00+00', 5, 1, 500000, '2026-10-12 15:10:00+00'),
+(3, 3, '2026-10-12 16:05:00+00', 8, 1, 21000000, '2026-10-12 16:05:00+00'),
+(4, 4, '2026-10-11 09:15:00+00', 11, 1, 5000000, '2026-10-11 09:15:00+00'),
+(5, 5, '2026-10-25 08:00:00+00', 1, 1, 150000, '2026-10-25 08:00:00+00'),
+(6, 6, '2026-10-25 09:00:00+00', 2, 1, 250000, '2026-10-25 09:00:00+00'),
+(7, 7, '2026-10-25 10:00:00+00', 3, 1, 100000, '2026-10-25 10:00:00+00'),
+(8, 8, '2026-10-25 11:00:00+00', 4, 1, 35000, '2026-10-25 11:00:00+00'),
+(9, 9, '2026-10-25 12:00:00+00', 5, 1, 1000000, '2026-10-25 12:00:00+00'),
+(10, 10, '2026-10-25 13:00:00+00', 6, 1, 2500000, '2026-10-25 13:00:00+00'),
+(11, 11, '2026-10-25 14:00:00+00', 7, 1, 3000000, '2026-10-25 14:00:00+00'),
+(12, 12, '2026-10-25 15:00:00+00', 8, 1, 21000000, '2026-10-25 15:00:00+00'),
+(13, 13, '2026-10-25 16:00:00+00', 9, 1, 50000, '2026-10-25 16:00:00+00'),
+(14, 14, '2026-10-25 17:00:00+00', 10, 1, 415000, '2026-10-25 17:00:00+00'),
+(15, 15, '2026-10-25 18:00:00+00', 11, 1, 500000, '2026-10-25 18:00:00+00');
 
-INSERT INTO "public"."transactions_y2026m10" ("id", "invoice_id", "invoice_created_at", "campaign_id", "bundle_campaign_id", "variant_id", "affiliate_id", "qty", "amount", "affiliate_commission", "created_at") VALUES
-(1, 1, '2026-10-12 14:30:00+00', 1, NULL, NULL, NULL, 1, 100000, 0, '2026-10-12 14:30:00+00'),
-(2, 2, '2026-10-12 15:10:00+00', 5, NULL, NULL, NULL, 1, 500000, 0, '2026-10-12 15:10:00+00'),
-(3, 3, '2026-10-12 16:05:00+00', 8, NULL, 4, NULL, 1, 21000000, 0, '2026-10-12 16:05:00+00'),
-(4, 4, '2026-10-11 09:15:00+00', 11, NULL, NULL, NULL, 1, 5000000, 0, '2026-10-11 09:15:00+00');
+INSERT INTO "public"."transactions_y2026m10" ("id", "invoice_id", "invoice_created_at", "campaign_id", "qty", "amount", "created_at") VALUES
+(1, 1, '2026-10-12 14:30:00+00', 1, 1, 100000, '2026-10-12 14:30:00+00'),
+(2, 2, '2026-10-12 15:10:00+00', 5, 1, 500000, '2026-10-12 15:10:00+00'),
+(3, 3, '2026-10-12 16:05:00+00', 8, 1, 21000000, '2026-10-12 16:05:00+00'),
+(4, 4, '2026-10-11 09:15:00+00', 11, 1, 5000000, '2026-10-11 09:15:00+00'),
+(5, 5, '2026-10-25 08:00:00+00', 1, 1, 150000, '2026-10-25 08:00:00+00'),
+(6, 6, '2026-10-25 09:00:00+00', 2, 1, 250000, '2026-10-25 09:00:00+00'),
+(7, 7, '2026-10-25 10:00:00+00', 3, 1, 100000, '2026-10-25 10:00:00+00'),
+(8, 8, '2026-10-25 11:00:00+00', 4, 1, 35000, '2026-10-25 11:00:00+00'),
+(9, 9, '2026-10-25 12:00:00+00', 5, 1, 1000000, '2026-10-25 12:00:00+00'),
+(10, 10, '2026-10-25 13:00:00+00', 6, 1, 2500000, '2026-10-25 13:00:00+00'),
+(11, 11, '2026-10-25 14:00:00+00', 7, 1, 3000000, '2026-10-25 14:00:00+00'),
+(12, 12, '2026-10-25 15:00:00+00', 8, 1, 21000000, '2026-10-25 15:00:00+00'),
+(13, 13, '2026-10-25 16:00:00+00', 9, 1, 50000, '2026-10-25 16:00:00+00'),
+(14, 14, '2026-10-25 17:00:00+00', 10, 1, 415000, '2026-10-25 17:00:00+00'),
+(15, 15, '2026-10-25 18:00:00+00', 11, 1, 500000, '2026-10-25 18:00:00+00');
 
 INSERT INTO "public"."transaction_qurban_names" ("id", "transaction_id", "transaction_created_at", "mudhohi_name") VALUES
 (1, 3, '2026-10-12 16:05:00+00', 'Budi Santoso'),
@@ -737,3 +783,6 @@ CREATE INDEX idx_notification_logs_invoice ON public.notification_logs USING btr
 
 -- Indices
 CREATE INDEX idx_ads_conversion_logs_invoice ON public.ads_conversion_logs USING btree (invoice_code);
+
+SELECT setval('invoices_id_seq', (SELECT MAX(id) FROM invoices));
+SELECT setval('transactions_id_seq', (SELECT MAX(id) FROM transactions));
