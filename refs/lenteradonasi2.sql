@@ -299,6 +299,11 @@ CREATE TABLE "public"."invoices" (
     "qris_dynamic" text,
     "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "paid_at" timestamptz,
+    "is_wa_checkout_sent" bool DEFAULT false,
+    "is_wa_paid_sent" bool DEFAULT false,
+    "is_email_checkout_sent" bool DEFAULT false,
+    "is_email_paid_sent" bool DEFAULT false,
+    "is_ads_sent" bool DEFAULT false,
     PRIMARY KEY ("id","created_at")
 );
 
@@ -331,6 +336,11 @@ CREATE TABLE "public"."invoices_y2026m10" (
     "qris_dynamic" text,
     "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "paid_at" timestamptz,
+    "is_wa_checkout_sent" bool DEFAULT false,
+    "is_wa_paid_sent" bool DEFAULT false,
+    "is_email_checkout_sent" bool DEFAULT false,
+    "is_email_paid_sent" bool DEFAULT false,
+    "is_ads_sent" bool DEFAULT false,
     PRIMARY KEY ("id","created_at")
 );
 
@@ -535,10 +545,16 @@ INSERT INTO "public"."withdrawals" ("id", "affiliate_id", "amount", "bank_accoun
 (2, 1, 750000, 'GoPay 08123456789', 'PROCESSED', '2026-04-19 01:39:51.048594+00', '2026-09-15 14:00:00+00');
 
 INSERT INTO "public"."payment_methods" ("id", "code", "name", "logo_url", "type", "provider", "admin_fee_flat", "admin_fee_pct", "is_active", "is_redirect", "sort_order") VALUES
-(1, 'GOPAY', 'GoPay', 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg', 'E-Wallet', 'Midtrans', 0, 0.00, 't', 'f', 1),
-(2, 'BCAVA', 'BCA Virtual Account', 'https://upload.wikimedia.org/wikipedia/id/e/e0/BCA_logo.svg', 'Bank Transfer', 'Xendit', 4000, 0.00, 't', 'f', 2),
-(3, 'MANDIRIVA', 'Mandiri Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_of_Bank_Mandiri.svg', 'Bank Transfer', 'Xendit', 4000, 0.00, 't', 'f', 3),
-(4, 'BSIVA', 'BSI Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Bank_Syariah_Indonesia.svg', 'Bank Transfer', 'Xendit', 4000, 0.00, 't', 'f', 4);
+(1, 'GOPAY', 'GoPay', 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg', 'e_wallet', 'midtrans', 0, 0.00, 't', 'f', 1),
+(2, 'BCAVA', 'BCA Virtual Account', 'https://upload.wikimedia.org/wikipedia/id/e/e0/BCA_logo.svg', 'va', 'xendit', 4000, 0.00, 't', 'f', 2),
+(3, 'MANDIRIVA', 'Mandiri Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_of_Bank_Mandiri.svg', 'va', 'xendit', 4000, 0.00, 't', 'f', 3),
+(4, 'BSIVA', 'BSI Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Bank_Syariah_Indonesia.svg', 'va', 'xendit', 4000, 0.00, 't', 'f', 4),
+(5, 'QR_CODE', 'QRIS Dynamic', 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg', 'qr_code', 'xendit', 0, 0.00, 't', 'f', 5),
+(6, 'SHOPEEPAY', 'ShopeePay', 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg', 'e_wallet', 'xendit', 0, 0.00, 't', 'f', 6),
+(7, 'DANA', 'DANA', 'https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg', 'e_wallet', 'xendit', 0, 0.00, 't', 'f', 7),
+(8, 'LINKAJA', 'LinkAja', 'https://upload.wikimedia.org/wikipedia/commons/8/83/LinkAja.svg', 'e_wallet', 'xendit', 0, 0.00, 't', 'f', 8);
+
+SELECT setval('payment_methods_id_seq', (SELECT MAX(id) FROM payment_methods));
 
 INSERT INTO "public"."payment_instructions" ("id", "payment_method_id", "title", "content", "sort_order", "created_at") VALUES
 (1, 2, 'Pembayaran Pembayaran via m-BCA', '<ol><li>Buka aplikasi BCA Mobile dan login.</li><li>Pilih menu <strong>m-Transfer</strong> > <strong>BCA Virtual Account</strong>.</li><li>Masukkan nomor Virtual Account yang tertera di atas dan klik <strong>Send</strong>.</li></ol>', 1, '2026-04-19 01:39:51.048594+00'),
@@ -550,17 +566,17 @@ INSERT INTO "public"."donors" ("id", "name", "email", "phone", "is_anonymous_def
 (2, 'Budi Santoso', 'budi.s@email.com', '08567890123', 'f', '2026-04-19 01:39:51.048594+00'),
 (3, 'Siti Aminah', 'siti@email.com', '08198765432', 'f', '2026-04-19 01:39:51.048594+00');
 
-INSERT INTO "public"."invoices" ("id", "invoice_code", "donor_id", "payment_method_id", "donor_name_snapshot", "donor_email", "donor_phone", "is_anonymous", "base_amount", "admin_fee", "total_amount", "fb_click_id", "fb_browser_id", "tiktok_click_id", "google_click_id", "client_ip_address", "client_user_agent", "status", "va_number", "payment_url", "qris_dynamic", "created_at", "paid_at") VALUES
-(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, 'f', 100000, 0, 100000, 'fb.1.123abc456', NULL, NULL, NULL, '192.168.1.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)', 'PAID', NULL, NULL, NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00'),
-(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, 't', 500000, 4000, 504000, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NULL, NULL, NULL, '2026-10-12 15:10:00+00', NULL),
-(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, 'f', 21000000, 4000, 21004000, NULL, NULL, 'tiktok.abc.123', NULL, '114.120.10.15', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'PAID', NULL, NULL, NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00'),
-(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, 'f', 5000000, 4000, 5004000, NULL, NULL, NULL, NULL, NULL, NULL, 'PAID', NULL, NULL, NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00');
+INSERT INTO "public"."invoices" ("id", "invoice_code", "donor_id", "payment_method_id", "donor_name_snapshot", "donor_email", "donor_phone", "is_anonymous", "base_amount", "admin_fee", "total_amount", "fb_click_id", "fb_browser_id", "tiktok_click_id", "google_click_id", "client_ip_address", "client_user_agent", "status", "va_number", "payment_url", "qris_dynamic", "xendit_payment_request_id", "created_at", "paid_at") VALUES
+(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, 'f', 100000, 0, 100000, 'fb.1.123abc456', NULL, NULL, NULL, '192.168.1.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)', 'PAID', NULL, NULL, NULL, NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00'),
+(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, 't', 500000, 4000, 504000, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NULL, NULL, NULL, NULL, '2026-10-12 15:10:00+00', NULL),
+(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, 'f', 21000000, 4000, 21004000, NULL, NULL, 'tiktok.abc.123', NULL, '114.120.10.15', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'PAID', NULL, NULL, NULL, NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00'),
+(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, 'f', 5000000, 4000, 5004000, NULL, NULL, NULL, NULL, NULL, NULL, 'PAID', NULL, NULL, NULL, NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00');
 
-INSERT INTO "public"."invoices_y2026m10" ("id", "invoice_code", "donor_id", "payment_method_id", "donor_name_snapshot", "donor_email", "donor_phone", "is_anonymous", "base_amount", "admin_fee", "total_amount", "fb_click_id", "fb_browser_id", "tiktok_click_id", "google_click_id", "client_ip_address", "client_user_agent", "status", "va_number", "payment_url", "qris_dynamic", "created_at", "paid_at") VALUES
-(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, 'f', 100000, 0, 100000, 'fb.1.123abc456', NULL, NULL, NULL, '192.168.1.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)', 'PAID', NULL, NULL, NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00'),
-(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, 't', 500000, 4000, 504000, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NULL, NULL, NULL, '2026-10-12 15:10:00+00', NULL),
-(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, 'f', 21000000, 4000, 21004000, NULL, NULL, 'tiktok.abc.123', NULL, '114.120.10.15', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'PAID', NULL, NULL, NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00'),
-(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, 'f', 5000000, 4000, 5004000, NULL, NULL, NULL, NULL, NULL, NULL, 'PAID', NULL, NULL, NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00');
+INSERT INTO "public"."invoices_y2026m10" ("id", "invoice_code", "donor_id", "payment_method_id", "donor_name_snapshot", "donor_email", "donor_phone", "is_anonymous", "base_amount", "admin_fee", "total_amount", "fb_click_id", "fb_browser_id", "tiktok_click_id", "google_click_id", "client_ip_address", "client_user_agent", "status", "va_number", "payment_url", "qris_dynamic", "xendit_payment_request_id", "created_at", "paid_at") VALUES
+(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, 'f', 100000, 0, 100000, 'fb.1.123abc456', NULL, NULL, NULL, '192.168.1.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)', 'PAID', NULL, NULL, NULL, NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00'),
+(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, 't', 500000, 4000, 504000, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NULL, NULL, NULL, NULL, '2026-10-12 15:10:00+00', NULL),
+(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, 'f', 21000000, 4000, 21004000, NULL, NULL, 'tiktok.abc.123', NULL, '114.120.10.15', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'PAID', NULL, NULL, NULL, NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00'),
+(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, 'f', 5000000, 4000, 5004000, NULL, NULL, NULL, NULL, NULL, NULL, 'PAID', NULL, NULL, NULL, NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00');
 
 INSERT INTO "public"."transactions" ("id", "invoice_id", "invoice_created_at", "campaign_id", "bundle_campaign_id", "variant_id", "affiliate_id", "qty", "amount", "affiliate_commission", "created_at") VALUES
 (1, 1, '2026-10-12 14:30:00+00', 1, NULL, NULL, NULL, 1, 100000, 0, '2026-10-12 14:30:00+00'),

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import useSWR from 'swr';
 import { 
-  Plus, Search, Edit, Trash2, Eye, GripVertical, X, Save, Loader2
+  Plus, Search, Edit, Trash2, Eye, GripVertical, X, Save, Loader2, Copy
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -45,7 +45,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 const formatIDR = (amount: number) => 
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount || 0);
 
-function SortableRow({ camp, idx, offset, formatIDR, router, handleDelete }: any) {
+function SortableRow({ camp, idx, offset, formatIDR, router, handleDelete, handleDuplicate }: any) {
   const {
     attributes,
     listeners,
@@ -132,7 +132,8 @@ function SortableRow({ camp, idx, offset, formatIDR, router, handleDelete }: any
         <div className="flex justify-center gap-1">
           <button onClick={() => router.push(`/campaigns/${camp.id}`)} className="p-2 text-teal-600 hover:bg-teal-50 rounded-xl transition-all" title="Detail Performa"><Eye size={18} /></button>
           <button onClick={() => router.push(`/campaigns/${camp.id}/edit`)} className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-800 rounded-xl transition-all" title="Edit Kampanye"><Edit size={18} /></button>
-          <button onClick={() => handleDelete(camp.id)} className="p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"><Trash2 size={18} /></button>
+          <button onClick={() => handleDuplicate(camp)} className="p-2 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all" title="Duplicate Kampanye"><Copy size={18} /></button>
+          <button onClick={() => handleDelete(camp.id)} className="p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all" title="Hapus"><Trash2 size={18} /></button>
         </div>
       </td>
     </tr>
@@ -218,6 +219,43 @@ export default function CampaignsPage() {
             const res = await fetch(`/api/campaigns?id=${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete');
             toast.success('Kampanye dihapus');
+            mutate();
+          } catch (err: any) {
+            toast.error(err.message);
+          }
+        }
+      }
+    });
+  };
+
+  const handleDuplicate = async (camp: any) => {
+    toast('Duplikasi kampanye ini?', {
+      action: {
+        label: 'Duplikat',
+        onClick: async () => {
+          try {
+            const body = {
+              title: `${camp.title} (Copy)`,
+              category_id: camp.category_id,
+              slug: `${camp.slug}-copy`,
+              image_url: camp.image_url,
+              description: camp.description,
+              target_amount: camp.target_amount,
+              end_date: camp.end_date,
+              is_zakat: camp.is_zakat,
+              is_qurban: camp.is_qurban,
+              has_no_target: camp.has_no_target,
+              is_urgent: camp.is_urgent,
+              is_verified: camp.is_verified,
+              status: camp.status,
+            };
+            const res = await fetch('/api/campaigns', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('Failed to duplicate campaign');
+            toast.success('Kampanye berhasil diduplikat');
             mutate();
           } catch (err: any) {
             toast.error(err.message);
@@ -344,6 +382,7 @@ export default function CampaignsPage() {
                         formatIDR={formatIDR}
                         router={router}
                         handleDelete={handleDelete}
+                        handleDuplicate={handleDuplicate}
                       />
                     ))}
                   </SortableContext>

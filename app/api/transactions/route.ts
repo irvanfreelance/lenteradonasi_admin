@@ -20,6 +20,9 @@ export async function GET(req: Request) {
       SELECT 
         i.id, i.invoice_code, i.donor_name_snapshot, i.total_amount, 
         i.status, i.created_at, i.paid_at,
+        i.is_wa_checkout_sent, i.is_wa_paid_sent, 
+        i.is_email_checkout_sent, i.is_email_paid_sent, 
+        i.is_ads_sent,
         pm.name as payment_method,
         JSONB_AGG(DISTINCT jsonb_build_object('id', c.id, 'title', c.title)) FILTER (WHERE c.id IS NOT NULL) as campaigns,
         COUNT(*) OVER() as total_count
@@ -68,7 +71,10 @@ export async function GET(req: Request) {
     }
     
     sql += `
-      GROUP BY i.id, i.invoice_code, i.donor_name_snapshot, i.total_amount, i.status, i.created_at, i.paid_at, pm.name
+      GROUP BY 
+        i.id, i.invoice_code, i.donor_name_snapshot, i.total_amount, i.status, i.created_at, i.paid_at, 
+        i.is_wa_checkout_sent, i.is_wa_paid_sent, i.is_email_checkout_sent, i.is_email_paid_sent, i.is_ads_sent,
+        pm.name
       ORDER BY i.created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;

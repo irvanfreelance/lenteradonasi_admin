@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import { useRouter } from 'next/navigation';
 import {
-  Plus, Search, Edit, Trash2, X, Save, GripVertical, FileText, Loader2, Image as ImageIcon
+  Plus, Search, Edit, Trash2, X, Save, GripVertical, FileText, Loader2, Image as ImageIcon, Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,29 @@ import { CSS } from '@dnd-kit/utilities';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function SortableRow({ item, onEdit, onDelete, onInstructions }: { item: any, onEdit: any, onDelete: any, onInstructions: any }) {
+// Display labels for slug-based enum values
+const TYPE_LABELS: Record<string, string> = {
+  e_wallet: 'E-Wallet',
+  bank_transfer: 'Bank Transfer',
+  va: 'Virtual Account',
+  qris: 'QRIS',
+  manual_transfer: 'Manual Transfer',
+  retail_outlet: 'Retail Outlet',
+  qr_code: 'QR Code',
+};
+
+const PROVIDER_LABELS: Record<string, string> = {
+  midtrans: 'Midtrans',
+  xendit: 'Xendit',
+  manual: 'Manual',
+  moota: 'Moota',
+  faspay: 'Faspay',
+};
+
+const typeLabel = (v: string) => TYPE_LABELS[v] ?? v;
+const providerLabel = (v: string) => PROVIDER_LABELS[v] ?? v;
+
+function SortableRow({ item, onEdit, onDelete, onInstructions, onDuplicate }: { item: any, onEdit: any, onDelete: any, onInstructions: any, onDuplicate: any }) {
   const {
     attributes,
     listeners,
@@ -81,10 +103,10 @@ function SortableRow({ item, onEdit, onDelete, onInstructions }: { item: any, on
         </div>
       </td>
       <td className="px-6 py-5 text-sm font-normal text-slate-600">
-        <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none">{item.provider}</Badge>
+        <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none">{providerLabel(item.provider)}</Badge>
       </td>
       <td className="px-6 py-5">
-        <Badge variant="destructive" className="bg-rose-50 text-rose-600 border-none">{item.type}</Badge>
+        <Badge variant="destructive" className="bg-rose-50 text-rose-600 border-none">{typeLabel(item.type)}</Badge>
       </td>
       <td className="px-6 py-5">
         <div className="flex flex-col items-start gap-1">
@@ -94,9 +116,10 @@ function SortableRow({ item, onEdit, onDelete, onInstructions }: { item: any, on
       </td>
       <td className="px-6 py-5">
         <div className="flex gap-1 transition-opacity">
-          <button onClick={() => onEdit(item)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all shadow-sm"><Edit size={16} /></button>
-          <button onClick={() => onInstructions(item.id)} className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all shadow-sm"><FileText size={16} /></button>
-          <button onClick={() => onDelete(item.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all shadow-sm"><Trash2 size={16} /></button>
+          <button onClick={() => onEdit(item)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all shadow-sm" title="Edit"><Edit size={16} /></button>
+          <button onClick={() => onDuplicate(item)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all shadow-sm" title="Duplicate"><Copy size={16} /></button>
+          <button onClick={() => onInstructions(item.id)} className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all shadow-sm" title="Instructions"><FileText size={16} /></button>
+          <button onClick={() => onDelete(item.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all shadow-sm" title="Delete"><Trash2 size={16} /></button>
         </div>
       </td>
     </tr>
@@ -130,7 +153,7 @@ export default function PaymentChannelsPage() {
     code: string, name: string, logo_url: string, type: string, provider: string,
     is_active: boolean, is_redirect: boolean, logo_file: File | null
   }>({
-    code: '', name: '', logo_url: '', type: 'Bank Transfer', provider: 'Moota',
+    code: '', name: '', logo_url: '', type: 'bank_transfer', provider: 'moota',
     is_active: true, is_redirect: false, logo_file: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,7 +206,7 @@ export default function PaymentChannelsPage() {
       });
     } else {
       setFormData({
-        code: '', name: '', logo_url: '', type: 'Bank Transfer', provider: 'Moota',
+        code: '', name: '', logo_url: '', type: 'bank_transfer', provider: 'moota',
         is_active: true, is_redirect: false, logo_file: null
       });
     }
@@ -263,6 +286,34 @@ export default function PaymentChannelsPage() {
     });
   };
 
+  const handleDuplicate = async (item: any) => {
+    toast('Duplikasi channel ini?', {
+      action: {
+        label: 'Duplikat',
+        onClick: async () => {
+          try {
+            const { id, ...restData } = item;
+            const body = {
+              ...restData,
+              name: `${item.name} (Copy)`,
+              code: `${item.code}-COPY`,
+            };
+            const res = await fetch('/api/payment-methods', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('Failed to duplicate channel');
+            toast.success('Channel berhasil diduplikat');
+            mutate(`/api/payment-methods?search=${search}`);
+          } catch (err: any) {
+            toast.error(err.message);
+          }
+        }
+      }
+    });
+  };
+
   if (error) return <div className="p-8 text-rose-500 font-normal bg-rose-50 rounded-2xl border border-rose-100 italic">Error: {error.message}</div>;
 
   return (
@@ -320,6 +371,7 @@ export default function PaymentChannelsPage() {
                         key={item.id}
                         item={item}
                         onEdit={handleOpenModal}
+                        onDuplicate={handleDuplicate}
                         onDelete={handleDelete}
                         onInstructions={(id: number) => router.push(`/payment-channels/${id}/instructions`)}
                       />
@@ -374,10 +426,11 @@ export default function PaymentChannelsPage() {
                     value={formData.provider}
                     onChange={(val) => setFormData({ ...formData, provider: String(val) })}
                     options={[
-                      { id: 'Moota', name: 'Moota' },
-                      { id: 'Faspay', name: 'Faspay' },
-                      { id: 'Midtrans', name: 'Midtrans' },
-                      { id: 'Xendit', name: 'Xendit' }
+                      { id: 'moota', name: 'Moota' },
+                      { id: 'faspay', name: 'Faspay' },
+                      { id: 'midtrans', name: 'Midtrans' },
+                      { id: 'xendit', name: 'Xendit' },
+                      { id: 'manual', name: 'Manual' }
                     ]}
                   />
                 </div>
@@ -387,10 +440,13 @@ export default function PaymentChannelsPage() {
                     value={formData.type}
                     onChange={(val) => setFormData({ ...formData, type: String(val) })}
                     options={[
-                      { id: 'Bank Transfer', name: 'Bank Transfer' },
-                      { id: 'E-Wallet', name: 'E-Wallet' },
-                      { id: 'Virtual Account', name: 'Virtual Account' },
-                      { id: 'QRIS', name: 'QRIS' },
+                      { id: 'bank_transfer', name: 'Bank Transfer' },
+                      { id: 'e_wallet', name: 'E-Wallet' },
+                      { id: 'va', name: 'Virtual Account' },
+                      { id: 'qris', name: 'QRIS' },
+                      { id: 'manual_transfer', name: 'Manual Transfer' },
+                      { id: 'retail_outlet', name: 'Retail Outlet' },
+                      { id: 'qr_code', name: 'QR Code' },
                     ]}
                   />
                 </div>

@@ -265,8 +265,14 @@ CREATE TABLE invoices (
     va_number VARCHAR(50),
     payment_url TEXT,
     qris_dynamic TEXT,
+    xendit_payment_request_id VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     paid_at TIMESTAMPTZ,
+    is_wa_checkout_sent BOOLEAN DEFAULT FALSE,
+    is_wa_paid_sent BOOLEAN DEFAULT FALSE,
+    is_email_checkout_sent BOOLEAN DEFAULT FALSE,
+    is_email_paid_sent BOOLEAN DEFAULT FALSE,
+    is_ads_sent BOOLEAN DEFAULT FALSE,
     
     -- WAJIB: Kolom partisi (created_at) harus masuk ke Primary Key & Unique Key
     PRIMARY KEY (id, created_at),
@@ -489,7 +495,11 @@ INSERT INTO payment_methods (id, code, name, logo_url, type, provider, admin_fee
 (1, 'GOPAY', 'GoPay', 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg', 'E-Wallet', 'Midtrans', 0, FALSE, 1),
 (2, 'BCAVA', 'BCA Virtual Account', 'https://upload.wikimedia.org/wikipedia/id/e/e0/BCA_logo.svg', 'Bank Transfer', 'Xendit', 4000, FALSE, 2),
 (3, 'MANDIRIVA', 'Mandiri Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_of_Bank_Mandiri.svg', 'Bank Transfer', 'Xendit', 4000, FALSE, 3),
-(4, 'BSIVA', 'BSI Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Bank_Syariah_Indonesia.svg', 'Bank Transfer', 'Xendit', 4000, FALSE, 4);
+(4, 'BSIVA', 'BSI Virtual Account', 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Bank_Syariah_Indonesia.svg', 'Bank Transfer', 'Xendit', 4000, FALSE, 4),
+(5, 'QR_CODE', 'QRIS Dynamic', 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg', 'qr_code', 'Xendit', 0, FALSE, 5),
+(6, 'SHOPEEPAY', 'ShopeePay', 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg', 'E-Wallet', 'Xendit', 0, FALSE, 6),
+(7, 'DANA', 'DANA', 'https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg', 'E-Wallet', 'Xendit', 0, FALSE, 7),
+(8, 'LINKAJA', 'LinkAja', 'https://upload.wikimedia.org/wikipedia/commons/8/83/LinkAja.svg', 'E-Wallet', 'Xendit', 0, FALSE, 8);
 
 -- Instruksi Pembayaran
 INSERT INTO payment_instructions (id, payment_method_id, title, content, sort_order) VALUES
