@@ -65,7 +65,7 @@ export function FileUpload({
     }
   };
 
-  const isImage = value?.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || value?.startsWith('blob:');
+  const isImage = value?.match(/\.(jpeg|jpg|gif|png|webp|svg|ico)$/i) || value?.startsWith('blob:');
 
   return (
     <div className={cn("space-y-4 w-full", className)}>
@@ -75,7 +75,7 @@ export function FileUpload({
         {value ? (
           <div className="relative group">
             {isImage ? (
-              <div className="aspect-video bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+              <div className={cn("bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden shadow-sm", className)}>
                 <img src={value} alt="Preview" className="w-full h-full object-cover" />
               </div>
             ) : (
@@ -99,7 +99,8 @@ export function FileUpload({
           <div 
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              "aspect-video bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 overflow-hidden cursor-pointer hover:border-teal-500/50 hover:bg-slate-100/50 transition-all group",
+              "bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 overflow-hidden cursor-pointer hover:border-teal-500/50 hover:bg-slate-100/50 transition-all group",
+              className,
               isUploading && "animate-pulse pointer-events-none"
             )}
           >

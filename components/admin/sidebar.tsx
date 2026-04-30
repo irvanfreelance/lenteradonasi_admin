@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import useSWR from 'swr';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -31,9 +32,11 @@ const menuItems = [
   { icon: Settings, label: 'Pengaturan', href: '/settings' },
 ];
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Sidebar({ isOpen, toggle }: { isOpen: boolean, toggle: () => void }) {
   const pathname = usePathname();
+  const { data: config } = useSWR('/api/ngo-config', fetcher);
 
   return (
     <aside 
@@ -43,13 +46,23 @@ export default function Sidebar({ isOpen, toggle }: { isOpen: boolean, toggle: (
       )}
     >
       {/* Logo Section */}
-      <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-        <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center shrink-0">
-          <Heart size={20} className="text-white fill-teal-100/20" />
+      <div className={cn(
+        "flex items-center gap-3 border-b border-slate-700/50 transition-all duration-300",
+        isOpen ? "p-6" : "p-4 justify-center"
+      )}>
+        <div className={cn(
+          "shrink-0 overflow-hidden flex items-center justify-center transition-all",
+          config?.logo_url ? "w-20 h-20" : "w-12 h-12 rounded-xl bg-primary border border-white/10 shadow-lg"
+        )}>
+          {config?.logo_url ? (
+            <img src={config.logo_url} alt="Logo" className="w-full h-full object-contain" />
+          ) : (
+            <Heart size={24} className="text-white fill-white/20" />
+          )}
         </div>
         {isOpen && (
-          <div className="font-normal text-lg text-white truncate animate-in fade-in duration-500">
-            Lentera<span className="text-teal-400">Donasi</span>
+          <div className="font-bold text-sm text-white truncate animate-in fade-in duration-500 leading-tight">
+            {config?.ngo_name || 'Lentera Donasi'}
           </div>
         )}
       </div>
@@ -65,7 +78,7 @@ export default function Sidebar({ isOpen, toggle }: { isOpen: boolean, toggle: (
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
                 isActive 
-                  ? "bg-teal-500 text-white shadow-lg shadow-teal-500/20" 
+                  ? "bg-primary text-white shadow-lg shadow-primary/20" 
                   : "hover:bg-slate-800 hover:text-slate-100"
               )}
             >

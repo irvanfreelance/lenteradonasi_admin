@@ -127,6 +127,10 @@ export default function TransactionDetailPage() {
                      <p className="text-slate-400 font-medium">Admin Fee</p>
                      <p className="font-bold text-lg text-slate-800">{formatIDR(trx.admin_fee)}</p>
                   </div>
+                  <div className="space-y-1">
+                     <p className="text-slate-400 font-medium">Unique Code</p>
+                     <p className="font-bold text-lg text-slate-800">{trx.unique_code > 0 ? `+${trx.unique_code}` : '-'}</p>
+                  </div>
                   <div className="space-y-1 col-span-2 p-4 bg-slate-50 rounded-xl mt-2 flex justify-between items-center">
                      <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">TOTAL TAGIHAN</p>
                      <p className="font-black text-2xl text-indigo-600">{formatIDR(trx.total_amount)}</p>

@@ -44,6 +44,7 @@ CREATE TABLE ngo_configs (
     whatsapp_number VARCHAR(20),
     instagram_url VARCHAR(255),
     facebook_url VARCHAR(255),
+    favicon_url VARCHAR(255),
     
     -- Konfigurasi Integrasi Ads Tracking (Meta, Google, TikTok)
     meta_pixel_id VARCHAR(50),
@@ -253,6 +254,7 @@ CREATE TABLE invoices (
     base_amount BIGINT NOT NULL,
     admin_fee BIGINT DEFAULT 0,
     total_amount BIGINT NOT NULL,
+    unique_code INT DEFAULT 0,
     
     fb_click_id VARCHAR(255),      
     fb_browser_id VARCHAR(255),    
@@ -266,6 +268,7 @@ CREATE TABLE invoices (
     payment_url TEXT,
     qris_dynamic TEXT,
     xendit_payment_request_id VARCHAR(255),
+    doa TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     paid_at TIMESTAMPTZ,
     is_wa_checkout_sent BOOLEAN DEFAULT FALSE,
@@ -318,6 +321,7 @@ CREATE TABLE transaction_qurban_names (
     transaction_id BIGINT NOT NULL,
     transaction_created_at TIMESTAMPTZ NOT NULL,
     mudhohi_name VARCHAR(150) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (transaction_id, transaction_created_at) REFERENCES transactions(id, created_at) ON DELETE CASCADE
 );
 
@@ -334,6 +338,7 @@ CREATE TABLE payment_logs (
     id BIGSERIAL PRIMARY KEY,
     invoice_code VARCHAR(50) NOT NULL,
     endpoint VARCHAR(255),
+    type VARCHAR(50),
     request_payload TEXT,
     response_payload TEXT,
     http_status INT,
@@ -399,12 +404,12 @@ CREATE INDEX idx_notification_logs_invoice ON notification_logs(invoice_code);
 -- =================================================================================
 
 -- 1. Konfigurasi
-INSERT INTO ngo_configs (id, ngo_name, short_description, address, legal_info, whatsapp_number, meta_pixel_id, tiktok_pixel_id) VALUES 
-(1, 'Yayasan Peduli Sesama', 'Lembaga filantropi independen yang berdedikasi untuk menyalurkan kebaikan donatur secara transparan, profesional, dan tepat sasaran.', 'Jl. Kebaikan Bangsa No. 99, Gedung Amal Lt. 2, Jakarta Selatan, DKI Jakarta 12345', 'Resmi terdaftar dengan SK Kemenkumham RI No. AHU-00123.AH.01.04.Tahun 2026', '6281234567890', '123456789012345', 'CD12345TIKTOKPIXEL');
+INSERT INTO ngo_configs (id, ngo_name, logo_url, short_description, address, legal_info, primary_color, whatsapp_number, instagram_url, facebook_url, meta_pixel_id, meta_capi_token, google_ads_id, google_developer_token, tiktok_pixel_id, tiktok_events_api_token, favicon_url, updated_at) VALUES 
+(1, 'Yayasan Peduli Sesama', NULL, 'Lembaga filantropi independen yang berdedikasi untuk menyalurkan kebaikan donatur secara transparan, profesional, dan tepat sasaran.', 'Jl. Kebaikan Bangsa No. 99, Gedung Amal Lt. 2, Jakarta Selatan, DKI Jakarta 12345', 'Resmi terdaftar dengan SK Kemenkumham RI No. AHU-00123.AH.01.04.Tahun 2026', '#1086b1', '6281234567890', NULL, NULL, '123456789012345', NULL, NULL, NULL, 'CD12345TIKTOKPIXEL', NULL, NULL, '2026-04-19 01:39:51.048594+00');
 
-INSERT INTO admins (id, name, email, password_hash, role) VALUES 
-(1, 'Ahmad Fulan', 'ahmad@ngo.org', '$2a$12$Dummy', 'SUPERADMIN'),
-(2, 'Rina Keuangan', 'rina@ngo.org', '$2a$12$Dummy', 'FINANCE');
+INSERT INTO admins (id, name, email, password_hash, role, status, created_at) VALUES 
+(1, 'Ahmad Fulan', 'ahmad@ngo.org', '$2a$12$Dummy', 'SUPERADMIN', 'ACTIVE', '2026-04-19 01:39:51.048594+00'),
+(2, 'Rina Keuangan', 'rina@ngo.org', '$2a$12$Dummy', 'FINANCE', 'ACTIVE', '2026-04-19 01:39:51.048594+00');
 
 -- 2. Kategori
 INSERT INTO categories (id, name, color_theme) VALUES 
@@ -467,8 +472,9 @@ INSERT INTO campaign_updates (campaign_id, title, excerpt, content, image_url, c
 (2, 'Peletakan Batu Pertama Dimulai!', 'Alhamdulillah, proses pembangunan sekolah darurat mulai berjalan dengan antusiasme warga...', 'Halo Kakak-kakak Baik!\n\nKabar gembira, berkat donasi Anda, peletakan batu pertama untuk sekolah darurat telah dilaksanakan. Warga sangat antusias bergotong royong membersihkan lahan.\n\nTerus dukung kami agar bangunan ini segera berdiri dan anak-anak bisa belajar dengan nyaman.', 'https://images.pexels.com/photos/11844555/pexels-photo-11844555.jpeg', '2026-10-10 10:00:00');
 
 -- 4. Affiliate
-INSERT INTO affiliates (id, affiliate_code, name, email, phone, password_hash, balance) VALUES
-(1, 'AFF-992', 'Budi Marketer', 'budi.marketer@email.com', '08123456789', '$2a$12$Dummy', 1250000);
+INSERT INTO affiliates (id, affiliate_code, name, email, phone, password_hash, balance, status, created_at) VALUES
+(1, 'AFF-992', 'Budi Marketer', 'budi.marketer@email.com', '08123456789', '$2a$12$Dummy', 1250000, 'ACTIVE', '2026-04-19 01:39:51.048594+00'),
+(2, 'KOHDENIS', 'koh denis', 'irvan@cnt.id', '081462206437', '$2a$12$DummyGeneratedByAdmin', 0, 'ACTIVE', '2026-04-19 02:49:12.748093+00');
 
 -- Pengaturan Spesifik Komisi Afiliasi
 INSERT INTO affiliate_commissions (affiliate_id, campaign_id, commission_type, commission_value) VALUES
@@ -508,36 +514,46 @@ INSERT INTO payment_instructions (id, payment_method_id, title, content, sort_or
 (3, 1, 'Pembayaran dengan Aplikasi Gojek / GoPay', '<ol><li>Buka aplikasi Gojek atau dompet digital Anda.</li><li>Pilih menu <strong>Bayar / Scan</strong>.</li><li>Scan QR Code yang tampil di layar atau upload dari galeri.</li></ol>', 1);
 
 -- 6. Transaksi Partitioned (Bulan Oktober 2026)
--- Transaksi 1: Andi Dermawan (Camp 1)
-INSERT INTO invoices (id, invoice_code, donor_id, payment_method_id, donor_name_snapshot, base_amount, admin_fee, total_amount, status, created_at, paid_at, fb_click_id, client_ip_address, client_user_agent) VALUES 
-(1, 'TRX-9921', 1, 1, 'Andi Dermawan', 100000, 0, 100000, 'PAID', '2026-10-12 14:30:00', '2026-10-12 14:32:00', 'fb.1.123abc456', '192.168.1.1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)');
-INSERT INTO transactions (id, invoice_id, invoice_created_at, campaign_id, amount, created_at) VALUES 
-(1, 1, '2026-10-12 14:30:00', 1, 100000, '2026-10-12 14:30:00');
+INSERT INTO invoices (id, invoice_code, donor_id, payment_method_id, donor_name_snapshot, donor_email, donor_phone, is_anonymous, base_amount, admin_fee, total_amount, unique_code, status, va_number, created_at, paid_at, doa) VALUES
+(1, 'TRX-9921', 1, 1, 'Andi Dermawan', NULL, NULL, FALSE, 100000, 0, 100000, 0, 'PAID', NULL, '2026-10-12 14:30:00+00', '2026-10-12 14:32:00+00', NULL),
+(2, 'TRX-9922', NULL, 2, 'Hamba Allah', NULL, NULL, TRUE, 500000, 4000, 504000, 0, 'PENDING', NULL, '2026-10-12 15:10:00+00', NULL, NULL),
+(3, 'TRX-9923', 2, 3, 'Budi Santoso', NULL, NULL, FALSE, 21000000, 4000, 21004000, 0, 'PAID', NULL, '2026-10-12 16:05:00+00', '2026-10-12 16:15:00+00', NULL),
+(4, 'TRX-9924', 3, 4, 'Siti Aminah', NULL, NULL, FALSE, 5000000, 4000, 5004000, 0, 'PAID', NULL, '2026-10-11 09:15:00+00', '2026-10-11 09:20:00+00', NULL),
+(5, 'INV-20261025-A001', 1, 2, 'Andi Dermawan', 'andi@email.com', '08123456789', FALSE, 150000, 4000, 154000, 0, 'PAID', '807708123456789', '2026-10-25 08:00:00+00', '2026-10-25 08:05:00+00', 'Semoga Adik Rina cepat sembuh dan bisa sekolah lagi, semangat terus ya dek!'),
+(6, 'INV-20261025-A002', 2, 3, 'Budi Santoso', 'budi.s@email.com', '08567890123', FALSE, 250000, 4000, 254000, 0, 'PAID', '888808567890123', '2026-10-25 09:00:00+00', '2026-10-25 09:10:00+00', 'Semoga pembangunan sekolah di NTT lancar dan jadi amal jariyah untuk kita semua.'),
+(7, 'INV-20261025-A003', NULL, 5, 'Hamba Allah', NULL, NULL, TRUE, 100000, 0, 100000, 0, 'PAID', NULL, '2026-10-25 10:00:00+00', '2026-10-25 10:02:00+00', 'Semoga saudara kita korban banjir diberi ketabahan dan kekuatan.'),
+(8, 'INV-20261025-A004', 3, 1, 'Siti Aminah', 'siti@email.com', '08198765432', FALSE, 35000, 0, 35000, 0, 'PAID', NULL, '2026-10-25 11:00:00+00', '2026-10-25 11:05:00+00', 'Semoga nasi box ini berkah untuk yang menerima.'),
+(9, 'INV-20261025-A005', 1, 2, 'Andi Dermawan', 'andi@email.com', '08123456789', FALSE, 1000000, 4000, 1004000, 0, 'PAID', '807708123456789', '2026-10-25 12:00:00+00', '2026-10-25 12:15:00+00', 'Zakat maal untuk membersihkan harta tahun ini.'),
+(10, 'INV-20261025-A006', 2, 5, 'Budi Santoso', 'budi.s@email.com', '08567890123', FALSE, 2500000, 0, 2500000, 0, 'PAID', NULL, '2026-10-25 13:00:00+00', '2026-10-25 13:10:00+00', 'Bismillah, qurban kambing atas nama Bapak Budi Santoso.'),
+(11, 'INV-20261025-A007', 3, 5, 'Siti Aminah', 'siti@email.com', '08198765432', FALSE, 3000000, 0, 3000000, 0, 'PAID', NULL, '2026-10-25 14:00:00+00', '2026-10-25 14:10:00+00', 'Patungan qurban sapi, semoga bermanfaat untuk warga pedalaman.'),
+(12, 'INV-20261025-A008', NULL, 5, 'Anonim', NULL, NULL, TRUE, 21000000, 0, 21000000, 0, 'PAID', NULL, '2026-10-25 15:00:00+00', '2026-10-25 15:20:00+00', 'Qurban 1 ekor sapi utuh untuk kebaikan bersama.'),
+(13, 'INV-20261025-A009', 1, 1, 'Andi Dermawan', 'andi@email.com', '08123456789', FALSE, 50000, 0, 50000, 0, 'PAID', NULL, '2026-10-25 16:00:00+00', '2026-10-25 16:05:00+00', 'Sedikit infaq untuk operasional yayasan.'),
+(14, 'INV-20261025-A010', 2, 2, 'Budi Santoso', 'budi.s@email.com', '08567890123', FALSE, 415000, 4000, 419000, 0, 'PAID', '807708567890123', '2026-10-25 17:00:00+00', '2026-10-25 17:15:00+00', 'Paket kado yatim, semoga mereka bahagia di hari lebaran.'),
+(15, 'INV-20261025-A011', 3, 3, 'Siti Aminah', 'siti@email.com', '08198765432', FALSE, 500000, 4000, 504000, 0, 'PAID', '888808198765432', '2026-10-25 18:00:00+00', '2026-10-25 18:10:00+00', 'Untuk pembangunan masjid Al-Ikhlas, semoga segera tegak berdiri.');
 
--- Transaksi 2: Hamba Allah / Anonim (Camp 5)
-INSERT INTO invoices (id, invoice_code, donor_id, payment_method_id, donor_name_snapshot, is_anonymous, base_amount, admin_fee, total_amount, status, created_at) VALUES 
-(2, 'TRX-9922', NULL, 2, 'Hamba Allah', TRUE, 500000, 4000, 504000, 'PENDING', '2026-10-12 15:10:00');
-INSERT INTO transactions (id, invoice_id, invoice_created_at, campaign_id, amount, created_at) VALUES 
-(2, 2, '2026-10-12 15:10:00', 5, 500000, '2026-10-12 15:10:00');
-
--- Transaksi 3: Budi Santoso (Camp 8 - Qurban Sapi Utuh)
-INSERT INTO invoices (id, invoice_code, donor_id, payment_method_id, donor_name_snapshot, base_amount, admin_fee, total_amount, status, created_at, paid_at, tiktok_click_id, client_ip_address, client_user_agent) VALUES 
-(3, 'TRX-9923', 2, 3, 'Budi Santoso', 21000000, 4000, 21004000, 'PAID', '2026-10-12 16:05:00', '2026-10-12 16:15:00', 'tiktok.abc.123', '114.120.10.15', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
 INSERT INTO transactions (id, invoice_id, invoice_created_at, campaign_id, variant_id, qty, amount, created_at) VALUES 
-(3, 3, '2026-10-12 16:05:00', 8, 4, 1, 21000000, '2026-10-12 16:05:00');
-
--- Transaksi 4: Siti Aminah (Camp 11)
-INSERT INTO invoices (id, invoice_code, donor_id, payment_method_id, donor_name_snapshot, base_amount, admin_fee, total_amount, status, created_at, paid_at) VALUES 
-(4, 'TRX-9924', 3, 4, 'Siti Aminah', 5000000, 4000, 5004000, 'PAID', '2026-10-11 09:15:00', '2026-10-11 09:20:00');
-INSERT INTO transactions (id, invoice_id, invoice_created_at, campaign_id, amount, created_at) VALUES 
-(4, 4, '2026-10-11 09:15:00', 11, 5000000, '2026-10-11 09:15:00');
+(1, 1, '2026-10-12 14:30:00+00', 1, NULL, 1, 100000, '2026-10-12 14:30:00+00'),
+(2, 2, '2026-10-12 15:10:00+00', 5, NULL, 1, 500000, '2026-10-12 15:10:00+00'),
+(3, 3, '2026-10-12 16:05:00+00', 8, 4, 1, 21000000, '2026-10-12 16:05:00+00'),
+(4, 4, '2026-10-11 09:15:00+00', 11, NULL, 1, 5000000, '2026-10-11 09:15:00+00'),
+(5, 5, '2026-10-25 08:00:00+00', 1, NULL, 1, 150000, '2026-10-25 08:00:00+00'),
+(6, 6, '2026-10-25 09:00:00+00', 2, NULL, 1, 250000, '2026-10-25 09:00:00+00'),
+(7, 7, '2026-10-25 10:00:00+00', 3, NULL, 1, 100000, '2026-10-25 10:00:00+00'),
+(8, 8, '2026-10-25 11:00:00+00', 4, 1, 1, 35000, '2026-10-25 11:00:00+00'),
+(9, 9, '2026-10-25 12:00:00+00', 5, NULL, 1, 1000000, '2026-10-25 12:00:00+00'),
+(10, 10, '2026-10-25 13:00:00+00', 6, 2, 1, 2500000, '2026-10-25 13:00:00+00'),
+(11, 11, '2026-10-25 14:00:00+00', 7, 3, 1, 3000000, '2026-10-25 14:00:00+00'),
+(12, 12, '2026-10-25 15:00:00+00', 8, 4, 1, 21000000, '2026-10-25 15:00:00+00'),
+(13, 13, '2026-10-25 16:00:00+00', 9, NULL, 1, 50000, '2026-10-25 16:00:00+00'),
+(14, 14, '2026-10-25 17:00:00+00', 10, 5, 1, 415000, '2026-10-25 17:00:00+00'),
+(15, 15, '2026-10-25 18:00:00+00', 11, NULL, 1, 500000, '2026-10-25 18:00:00+00');
 
 -- Qurban Names untuk Transaksi 3
-INSERT INTO transaction_qurban_names (id, transaction_id, transaction_created_at, mudhohi_name) VALUES 
-(1, 3, '2026-10-12 16:05:00', 'Budi Santoso'), (2, 3, '2026-10-12 16:05:00', 'Istri Budi'),
-(3, 3, '2026-10-12 16:05:00', 'Anak 1'), (4, 3, '2026-10-12 16:05:00', 'Anak 2'),
-(5, 3, '2026-10-12 16:05:00', 'Anak 3'), (6, 3, '2026-10-12 16:05:00', 'Anak 4'),
-(7, 3, '2026-10-12 16:05:00', 'Anak 5');
+INSERT INTO transaction_qurban_names (id, transaction_id, transaction_created_at, mudhohi_name, created_at) VALUES 
+(1, 3, '2026-10-12 16:05:00+00', 'Budi Santoso', '2026-10-12 16:05:00+00'), (2, 3, '2026-10-12 16:05:00+00', 'Istri Budi', '2026-10-12 16:05:00+00'),
+(3, 3, '2026-10-12 16:05:00+00', 'Anak 1', '2026-10-12 16:05:00+00'), (4, 3, '2026-10-12 16:05:00+00', 'Anak 2', '2026-10-12 16:05:00+00'),
+(5, 3, '2026-10-12 16:05:00+00', 'Anak 3', '2026-10-12 16:05:00+00'), (6, 3, '2026-10-12 16:05:00+00', 'Anak 4', '2026-10-12 16:05:00+00'),
+(7, 3, '2026-10-12 16:05:00+00', 'Anak 5', '2026-10-12 16:05:00+00');
 
 -- 7. NOTIFICATION TEMPLATES & LOGS (Dengan Data JSON Payload Realistis)
 INSERT INTO notification_templates (id, event_trigger, channel, message_content, is_active) VALUES
@@ -545,10 +561,10 @@ INSERT INTO notification_templates (id, event_trigger, channel, message_content,
 (2, 'INVOICE_PENDING', 'WHATSAPP', 'Halo {nama}, tagihan donasi Rp {nominal} menunggu pembayaran. Silakan transfer ke {metode} berikut: {va_number} sebelum kedaluwarsa.', TRUE);
 
 -- Payment Logs (Merekam Request & Response ke Payment Gateway)
-INSERT INTO payment_logs (id, invoice_code, endpoint, request_payload, response_payload, http_status) VALUES
-(1, 'TRX-9921', 'https://api.midtrans.com/v2/charge', '{"payment_type": "gopay", "transaction_details": {"order_id": "TRX-9921", "gross_amount": 100000}}', '{"status_code": "201", "transaction_status": "pending", "actions": [{"name": "generate-qr-code", "url": "https://api.sandbox.midtrans.com/v2/gopay/123456/qr-code"}]}', 201),
-(2, 'TRX-9922', 'https://api.xendit.co/v2/virtual_accounts', '{"external_id": "TRX-9922", "bank_code": "BCA", "name": "Hamba Allah", "expected_amount": 504000, "is_closed": true}', '{"id": "614c...va", "external_id": "TRX-9922", "bank_code": "BCA", "merchant_code": "8077", "account_number": "807708123456789", "expected_amount": 504000, "status": "PENDING"}', 200),
-(3, 'TRX-9923', 'https://api.xendit.co/callback/virtual_accounts', '{"external_id": "TRX-9923", "amount": 21004000, "status": "COMPLETED", "transaction_timestamp": "2026-10-12T16:15:00.000Z"}', '{"status": "success", "message": "Callback processed and jobs queued"}', 200);
+INSERT INTO payment_logs (id, invoice_code, endpoint, type, request_payload, response_payload, http_status) VALUES
+(1, 'TRX-9921', 'https://api.midtrans.com/v2/charge', 'PAYMENT_REQUEST', '{"payment_type": "gopay", "transaction_details": {"order_id": "TRX-9921", "gross_amount": 100000}}', '{"status_code": "201", "transaction_status": "pending", "actions": [{"name": "generate-qr-code", "url": "https://api.sandbox.midtrans.com/v2/gopay/123456/qr-code"}]}', 201),
+(2, 'TRX-9922', 'https://api.xendit.co/v2/virtual_accounts', 'PAYMENT_REQUEST', '{"external_id": "TRX-9922", "bank_code": "BCA", "name": "Hamba Allah", "expected_amount": 504000, "is_closed": true}', '{"id": "614c...va", "external_id": "TRX-9922", "bank_code": "BCA", "merchant_code": "8077", "account_number": "807708123456789", "expected_amount": 504000, "status": "PENDING"}', 200),
+(3, 'TRX-9923', 'https://api.xendit.co/callback/virtual_accounts', 'CALLBACK', '{"external_id": "TRX-9923", "amount": 21004000, "status": "COMPLETED", "transaction_timestamp": "2026-10-12T16:15:00.000Z"}', '{"status": "success", "message": "Callback processed and jobs queued"}', 200);
 
 -- Notification Logs (Merekam Request & Response ke Fonnte API)
 INSERT INTO notification_logs (id, template_id, invoice_code, recipient, channel, request_payload, response_payload, status) VALUES

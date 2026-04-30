@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import useSWR from 'swr';
 import Sidebar from '@/components/admin/sidebar';
 import Header from '@/components/admin/header';
 
@@ -10,6 +11,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { data: config } = useSWR('/api/ngo-config', (url) => fetch(url).then(res => res.json()));
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -24,7 +27,7 @@ export default function AdminLayout({
         className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'
           }`}
       >
-        <Header title="Lentera Donasi Admin" />
+        <Header title={config?.ngo_name || "Lentera Donasi Admin"} />
 
         <main className="p-8 flex-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
           {children}

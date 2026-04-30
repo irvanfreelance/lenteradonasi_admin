@@ -22,7 +22,22 @@ export default function SettingsPage() {
   const { data: config, isLoading: configLoading } = useSWR('/api/ngo-config', fetcher);
   
   const [formData, setFormData] = useState({
-    ngo_name: '', short_description: '', address: '', primary_color: '#1086b1', logo_url: ''
+    ngo_name: '', 
+    short_description: '', 
+    address: '', 
+    legal_info: '',
+    primary_color: '#1086b1', 
+    logo_url: '',
+    favicon_url: '',
+    whatsapp_number: '',
+    instagram_url: '',
+    facebook_url: '',
+    meta_pixel_id: '',
+    meta_capi_token: '',
+    google_ads_id: '',
+    google_developer_token: '',
+    tiktok_pixel_id: '',
+    tiktok_events_api_token: ''
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -102,7 +117,6 @@ export default function SettingsPage() {
       }
     });
   };
-  // ──────────────────────────────────────────────────────────────────────
 
   const handleOpenTemplate = (t: any = null) => {
     setEditingTemplate(t);
@@ -148,8 +162,19 @@ export default function SettingsPage() {
         ngo_name: config.ngo_name || '',
         short_description: config.short_description || '',
         address: config.address || '',
+        legal_info: config.legal_info || '',
         primary_color: config.primary_color || '#1086b1',
-        logo_url: config.logo_url || ''
+        logo_url: config.logo_url || '',
+        favicon_url: config.favicon_url || '',
+        whatsapp_number: config.whatsapp_number || '',
+        instagram_url: config.instagram_url || '',
+        facebook_url: config.facebook_url || '',
+        meta_pixel_id: config.meta_pixel_id || '',
+        meta_capi_token: config.meta_capi_token || '',
+        google_ads_id: config.google_ads_id || '',
+        google_developer_token: config.google_developer_token || '',
+        tiktok_pixel_id: config.tiktok_pixel_id || '',
+        tiktok_events_api_token: config.tiktok_events_api_token || ''
       });
     }
   }, [config, configLoading]);
@@ -163,13 +188,18 @@ export default function SettingsPage() {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        mutate('/api/ngo-config');
+        await mutate('/api/ngo-config');
         setSaved(true);
-        toast.success('Pengaturan disimpan');
-        setTimeout(() => setSaved(false), 3000);
+        toast.success('Pengaturan disimpan. Memperbarui halaman...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Gagal menyimpan ke server');
       }
-    } catch (err) {
-      toast.error('Gagal menyimpan pengaturan');
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal menyimpan pengaturan');
     } finally {
       setSaving(false);
     }
@@ -218,37 +248,162 @@ export default function SettingsPage() {
       </div>
 
       {activeTab === 'UMUM' ? (
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-8 animate-in fade-in duration-300">
-          <section className="space-y-6">
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <SettingsIcon size={20} className="text-teal-500" /> Identitas NGO
-            </h3>
-            <div className="space-y-5">
-              <div className="text-left">
-                <label className="block text-xs font-normal text-slate-500 mb-2">Logo Organisasi</label>
-                <FileUpload
-                  value={formData.logo_url}
-                  onChange={(url) => setFormData({...formData, logo_url: url})}
-                />
+        <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-8">
+            <section className="space-y-6">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-50 pb-4">
+                <SettingsIcon size={20} className="text-primary" /> Identitas NGO
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-5">
+                  <div className="text-left">
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Nama Organisasi</label>
+                    <Input 
+                      type="text" 
+                      value={formData.ngo_name} 
+                      onChange={(e) => setFormData({...formData, ngo_name: e.target.value})} 
+                      placeholder="Contoh: Yayasan Peduli Sesama"
+                    />
+                  </div>
+
+                  <div className="text-left">
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Logo Organisasi</label>
+                    <div className="w-40">
+                      <FileUpload
+                        value={formData.logo_url}
+                        onChange={(url) => setFormData({...formData, logo_url: url})}
+                        className="aspect-square"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-left">
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Favicon</label>
+                    <div className="w-24">
+                      <FileUpload
+                        value={formData.favicon_url}
+                        onChange={(url) => setFormData({...formData, favicon_url: url})}
+                        className="aspect-square"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="text-left">
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Warna Utama (Theme)</label>
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-12 h-12 rounded-xl border border-slate-200 shadow-sm" 
+                        style={{ backgroundColor: formData.primary_color }}
+                      />
+                      <input 
+                        type="color" 
+                        value={formData.primary_color} 
+                        onChange={(e) => setFormData({...formData, primary_color: e.target.value})}
+                        className="h-12 bg-slate-50 border border-slate-100 rounded-xl px-2 cursor-pointer focus:outline-none"
+                      />
+                      <Input 
+                        type="text" 
+                        value={formData.primary_color} 
+                        onChange={(e) => setFormData({...formData, primary_color: e.target.value})}
+                        className="w-32 uppercase font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-left">
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">WhatsApp Organisasi</label>
+                    <Input type="text" value={formData.whatsapp_number} onChange={(e) => setFormData({...formData, whatsapp_number: e.target.value})} placeholder="628123456789" />
+                  </div>
+                </div>
               </div>
-              <div className="text-left">
-                <label className="block text-xs font-normal text-slate-500 mb-2">Nama organisasi</label>
-                <Input type="text" value={formData.ngo_name} onChange={(e) => setFormData({...formData, ngo_name: e.target.value})} />
+
+              <div className="space-y-5">
+                <div className="text-left">
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Deskripsi singkat</label>
+                  <textarea rows={3} value={formData.short_description} onChange={(e) => setFormData({...formData, short_description: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
+                </div>
+                <div className="text-left">
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Alamat kantor</label>
+                  <textarea rows={2} value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
+                </div>
+                <div className="text-left">
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Informasi Legal (SK Kemenkumham, dll)</label>
+                  <textarea rows={2} value={formData.legal_info} onChange={(e) => setFormData({...formData, legal_info: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
+                </div>
               </div>
-              <div className="text-left">
-                <label className="block text-xs font-normal text-slate-500 mb-2">Deskripsi singkat</label>
-                <textarea rows={3} value={formData.short_description} onChange={(e) => setFormData({...formData, short_description: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
+            </section>
+
+            <section className="space-y-6 pt-4">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-50 pb-4">
+                <Globe size={20} className="text-indigo-500" /> Media Sosial
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="text-left">
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Instagram URL</label>
+                  <Input type="url" value={formData.instagram_url} onChange={(e) => setFormData({...formData, instagram_url: e.target.value})} placeholder="https://instagram.com/organisasi" />
+                </div>
+                <div className="text-left">
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Facebook URL</label>
+                  <Input type="url" value={formData.facebook_url} onChange={(e) => setFormData({...formData, facebook_url: e.target.value})} placeholder="https://facebook.com/organisasi" />
+                </div>
               </div>
-              <div className="text-left">
-                <label className="block text-xs font-normal text-slate-500 mb-2">Alamat kantor</label>
-                <textarea rows={2} value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
+            </section>
+
+            <section className="space-y-6 pt-4">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-50 pb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7"/><path d="M16 5V3"/><path d="M8 5V3"/><path d="M3 9h18"/><path d="M16 19h6"/><path d="M19 16v6"/></svg> 
+                Tracking & Marketing Pixels
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Meta / FB */}
+                <div className="space-y-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-400 mb-2">Meta (Facebook) Pixel</p>
+                  <div className="text-left">
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Pixel ID</label>
+                    <Input type="text" value={formData.meta_pixel_id} onChange={(e) => setFormData({...formData, meta_pixel_id: e.target.value})} />
+                  </div>
+                  <div className="text-left">
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">CAPI Token</label>
+                    <textarea rows={2} value={formData.meta_capi_token} onChange={(e) => setFormData({...formData, meta_capi_token: e.target.value})} className="w-full bg-white border border-slate-100 rounded-xl py-3 px-4 text-xs font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
+                  </div>
+                </div>
+
+                {/* Google Ads */}
+                <div className="space-y-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-400 mb-2">Google Ads</p>
+                  <div className="text-left">
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Google Ads ID</label>
+                    <Input type="text" value={formData.google_ads_id} onChange={(e) => setFormData({...formData, google_ads_id: e.target.value})} />
+                  </div>
+                  <div className="text-left">
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Developer Token</label>
+                    <Input type="text" value={formData.google_developer_token} onChange={(e) => setFormData({...formData, google_developer_token: e.target.value})} />
+                  </div>
+                </div>
+
+                {/* TikTok */}
+                <div className="space-y-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-400 mb-2">TikTok Pixel</p>
+                  <div className="text-left">
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Pixel ID</label>
+                    <Input type="text" value={formData.tiktok_pixel_id} onChange={(e) => setFormData({...formData, tiktok_pixel_id: e.target.value})} />
+                  </div>
+                  <div className="text-left">
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Events API Token</label>
+                    <textarea rows={2} value={formData.tiktok_events_api_token} onChange={(e) => setFormData({...formData, tiktok_events_api_token: e.target.value})} className="w-full bg-white border border-slate-100 rounded-xl py-3 px-4 text-xs font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
+                  </div>
+                </div>
               </div>
+            </section>
+
+            <div className="pt-8 flex justify-end sticky bottom-0 bg-white/80 backdrop-blur-md py-4 border-t border-slate-50">
+              <Button onClick={handleSaveConfig} disabled={saving} size="lg" variant={saved ? "primary" : "secondary"}>
+                {saved ? <Check size={18} /> : <Save size={18} />} {saved ? 'Tersimpan' : saving ? 'Menyimpan...' : 'Simpan semua perubahan'}
+              </Button>
             </div>
-          </section>
-          <div className="pt-6 flex justify-end">
-            <Button onClick={handleSaveConfig} disabled={saving} variant={saved ? "primary" : "secondary"}>
-              {saved ? <Check size={16} /> : <Save size={16} />} {saved ? 'Tersimpan' : saving ? 'Menyimpan...' : 'Simpan perubahan'}
-            </Button>
           </div>
         </div>
       ) : (
