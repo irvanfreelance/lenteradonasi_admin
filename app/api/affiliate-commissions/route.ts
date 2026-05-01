@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { redis } from '@/lib/redis';
 import { z } from 'zod';
 
 const commissionSchema = z.object({
@@ -69,6 +70,7 @@ export async function POST(req: Request) {
       validated.commission_type,
       validated.commission_value,
     ]);
+    await redis.flushall();
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError)
@@ -105,6 +107,7 @@ export async function PATCH(req: Request) {
       RETURNING *
     `;
     const res = await query(sql, params);
+    await redis.flushall();
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
     if (error instanceof z.ZodError)
@@ -126,6 +129,7 @@ export async function DELETE(req: Request) {
       'DELETE FROM affiliate_commissions WHERE affiliate_id = $1 AND campaign_id = $2',
       [affiliate_id, campaign_id]
     );
+    await redis.flushall();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

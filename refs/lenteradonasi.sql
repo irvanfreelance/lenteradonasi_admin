@@ -51,6 +51,7 @@ CREATE TABLE ngo_configs (
     meta_capi_token TEXT,
     google_ads_id VARCHAR(50), 
     google_developer_token VARCHAR(255), 
+    google_analytic_id VARCHAR(50),
     tiktok_pixel_id VARCHAR(50),
     tiktok_events_api_token TEXT,
     
@@ -404,8 +405,8 @@ CREATE INDEX idx_notification_logs_invoice ON notification_logs(invoice_code);
 -- =================================================================================
 
 -- 1. Konfigurasi
-INSERT INTO ngo_configs (id, ngo_name, logo_url, short_description, address, legal_info, primary_color, whatsapp_number, instagram_url, facebook_url, meta_pixel_id, meta_capi_token, google_ads_id, google_developer_token, tiktok_pixel_id, tiktok_events_api_token, favicon_url, updated_at) VALUES 
-(1, 'Yayasan Peduli Sesama', NULL, 'Lembaga filantropi independen yang berdedikasi untuk menyalurkan kebaikan donatur secara transparan, profesional, dan tepat sasaran.', 'Jl. Kebaikan Bangsa No. 99, Gedung Amal Lt. 2, Jakarta Selatan, DKI Jakarta 12345', 'Resmi terdaftar dengan SK Kemenkumham RI No. AHU-00123.AH.01.04.Tahun 2026', '#1086b1', '6281234567890', NULL, NULL, '123456789012345', NULL, NULL, NULL, 'CD12345TIKTOKPIXEL', NULL, NULL, '2026-04-19 01:39:51.048594+00');
+INSERT INTO ngo_configs (id, ngo_name, logo_url, short_description, address, legal_info, primary_color, whatsapp_number, instagram_url, facebook_url, meta_pixel_id, meta_capi_token, google_ads_id, google_developer_token, google_analytic_id, tiktok_pixel_id, tiktok_events_api_token, favicon_url, updated_at) VALUES 
+(1, 'Yayasan Peduli Sesama', NULL, 'Lembaga filantropi independen yang berdedikasi untuk menyalurkan kebaikan donatur secara transparan, profesional, dan tepat sasaran.', 'Jl. Kebaikan Bangsa No. 99, Gedung Amal Lt. 2, Jakarta Selatan, DKI Jakarta 12345', 'Resmi terdaftar dengan SK Kemenkumham RI No. AHU-00123.AH.01.04.Tahun 2026', '#1086b1', '6281234567890', NULL, NULL, '123456789012345', NULL, NULL, NULL, NULL, 'CD12345TIKTOKPIXEL', NULL, NULL, '2026-04-19 01:39:51.048594+00');
 
 INSERT INTO admins (id, name, email, password_hash, role, status, created_at) VALUES 
 (1, 'Ahmad Fulan', 'ahmad@ngo.org', '$2a$12$Dummy', 'SUPERADMIN', 'ACTIVE', '2026-04-19 01:39:51.048594+00'),

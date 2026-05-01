@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       VALUES ($1, $2, $3, $4) RETURNING *
     `;
     const res = await query(sql, [event_trigger, channel, message_content, is_active ?? true]);
-    await redis.flushdb();
+    await redis.flushall();
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -42,7 +42,7 @@ export async function PATCH(req: Request) {
     `;
     const res = await query(sql, [event_trigger, channel, message_content, is_active, id]);
     if (res.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    await redis.flushdb();
+    await redis.flushall();
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -59,7 +59,7 @@ export async function DELETE(req: Request) {
     const sql = `DELETE FROM notification_templates WHERE id = $1 RETURNING *`;
     const res = await query(sql, [id]);
     if (res.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    await redis.flushdb();
+    await redis.flushall();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { redis } from '@/lib/redis';
 
 export async function GET(req: Request) {
   try {
@@ -47,6 +48,8 @@ export async function POST(req: Request) {
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [campaign_id, title, excerpt || null, content, image_url || null]
     );
+
+    await redis.flushall();
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error: any) {

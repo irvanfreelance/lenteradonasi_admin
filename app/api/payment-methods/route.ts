@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       [code, name, logo_url || null, type, provider, admin_fee_flat || 0, admin_fee_pct || 0, is_active, is_redirect, sort_order]
     );
 
-    await redis.flushdb();
+    await redis.flushall();
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error: any) {
@@ -60,7 +60,7 @@ export async function PATCH(req: Request) {
       await Promise.all(body.map(item => 
         query('UPDATE payment_methods SET sort_order = $1 WHERE id = $2', [item.sort_order, item.id])
       ));
-      await redis.flushdb();
+      await redis.flushall();
       return NextResponse.json({ message: 'Reordered successfully' });
     }
 
@@ -73,7 +73,7 @@ export async function PATCH(req: Request) {
       [code, name, logo_url || null, type, provider, admin_fee_flat || 0, admin_fee_pct || 0, is_active, is_redirect, id]
     );
 
-    await redis.flushdb();
+    await redis.flushall();
 
     return NextResponse.json(result.rows[0]);
   } catch (error: any) {
@@ -89,7 +89,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     await query('DELETE FROM payment_methods WHERE id = $1', [id]);
-    await redis.flushdb();
+    await redis.flushall();
     return NextResponse.json({ message: 'Deleted successfully' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

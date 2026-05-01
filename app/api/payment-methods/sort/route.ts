@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       }
     });
 
-    await redis.flushdb();
+    await redis.flushall();
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

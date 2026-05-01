@@ -134,7 +134,7 @@ export async function POST(req: Request) {
       return newId;
     });
     
-    await redis.flushdb();
+    await redis.flushall();
 
     return NextResponse.json({ id: result }, { status: 201 });
   } catch (error: any) {
@@ -162,7 +162,7 @@ export async function PATCH(req: Request) {
     const sql = `UPDATE campaigns SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $${params.length} RETURNING *`;
     const res = await query(sql, params);
     
-    await redis.flushdb();
+    await redis.flushall();
 
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
@@ -178,7 +178,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     await query('DELETE FROM campaigns WHERE id = $1', [id]);
-    await redis.flushdb();
+    await redis.flushall();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

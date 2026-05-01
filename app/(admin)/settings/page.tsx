@@ -37,7 +37,8 @@ export default function SettingsPage() {
     google_ads_id: '',
     google_developer_token: '',
     tiktok_pixel_id: '',
-    tiktok_events_api_token: ''
+    tiktok_events_api_token: '',
+    google_analytic_id: ''
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -174,7 +175,8 @@ export default function SettingsPage() {
         google_ads_id: config.google_ads_id || '',
         google_developer_token: config.google_developer_token || '',
         tiktok_pixel_id: config.tiktok_pixel_id || '',
-        tiktok_events_api_token: config.tiktok_events_api_token || ''
+        tiktok_events_api_token: config.tiktok_events_api_token || '',
+        google_analytic_id: config.google_analytic_id || ''
       });
     }
   }, [config, configLoading]);
@@ -381,6 +383,10 @@ export default function SettingsPage() {
                   <div className="text-left">
                     <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Developer Token</label>
                     <Input type="text" value={formData.google_developer_token} onChange={(e) => setFormData({...formData, google_developer_token: e.target.value})} />
+                  </div>
+                  <div className="text-left">
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Google Analytics ID</label>
+                    <Input type="text" value={formData.google_analytic_id} onChange={(e) => setFormData({...formData, google_analytic_id: e.target.value})} placeholder="G-XXXXXXXXXX" />
                   </div>
                 </div>
 

@@ -18,6 +18,7 @@ const configSchema = z.object({
   meta_capi_token: z.string().optional().nullable(),
   google_ads_id: z.string().optional().nullable(),
   google_developer_token: z.string().optional().nullable(),
+  google_analytic_id: z.string().optional().nullable(),
   tiktok_pixel_id: z.string().optional().nullable(),
   tiktok_events_api_token: z.string().optional().nullable(),
 });
@@ -59,10 +60,11 @@ export async function PATCH(req: Request) {
           meta_capi_token = $12,
           google_ads_id = $13,
           google_developer_token = $14,
-          tiktok_pixel_id = $15,
-          tiktok_events_api_token = $16,
+          google_analytic_id = $15,
+          tiktok_pixel_id = $16,
+          tiktok_events_api_token = $17,
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $17
+        WHERE id = $18
         RETURNING *
       `;
       res = await query(sql, [
@@ -80,6 +82,7 @@ export async function PATCH(req: Request) {
         validated.meta_capi_token,
         validated.google_ads_id,
         validated.google_developer_token,
+        validated.google_analytic_id,
         validated.tiktok_pixel_id,
         validated.tiktok_events_api_token,
         check.rows[0].id
@@ -89,10 +92,10 @@ export async function PATCH(req: Request) {
         INSERT INTO ngo_configs (
           ngo_name, logo_url, favicon_url, short_description, address, legal_info, 
           primary_color, whatsapp_number, instagram_url, facebook_url, 
-          meta_pixel_id, meta_capi_token, google_ads_id, google_developer_token, 
+          meta_pixel_id, meta_capi_token, google_ads_id, google_developer_token, google_analytic_id, 
           tiktok_pixel_id, tiktok_events_api_token
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING *
       `;
       res = await query(sql, [
@@ -110,13 +113,14 @@ export async function PATCH(req: Request) {
         validated.meta_capi_token,
         validated.google_ads_id,
         validated.google_developer_token,
+        validated.google_analytic_id,
         validated.tiktok_pixel_id,
         validated.tiktok_events_api_token
       ]);
     }
     
     try {
-      await redis.flushdb();
+      await redis.flushall();
     } catch (redisError) {
       console.warn('Redis flush failed, but database was updated:', redisError);
     }

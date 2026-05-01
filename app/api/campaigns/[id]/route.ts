@@ -125,7 +125,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     });
 
-    await redis.flushdb();
+    await redis.flushall();
 
     return NextResponse.json({ success: true, message: 'Data berelasi berhasil disimpan.'});
   } catch (error: any) {

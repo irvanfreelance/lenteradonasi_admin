@@ -103,7 +103,7 @@ export async function PATCH(req: Request) {
 
     if (res.rowCount === 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     
-    await redis.flushdb();
+    await redis.flushall();
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -121,7 +121,7 @@ export async function DELETE(req: Request) {
     }
 
     await query('DELETE FROM invoices WHERE id = $1 AND created_at = $2', [id, created_at]);
-    await redis.flushdb();
+    await redis.flushall();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

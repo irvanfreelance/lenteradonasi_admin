@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { redis } from '@/lib/redis';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,6 +18,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Update not found' }, { status: 404 });
     }
 
+    await redis.flushall();
+
     return NextResponse.json(result.rows[0]);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -27,6 +30,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const id = (await params).id;
     await query('DELETE FROM campaign_updates WHERE id = $1', [id]);
+    await redis.flushall();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
