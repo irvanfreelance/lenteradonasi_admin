@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import { query, withTransaction } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { invalidateCache } from '@/lib/redis';
 import { z } from 'zod';
 
 // Validation schema for creating/updating campaigns
 const campaignSchema = z.object({
   title: z.string().min(5),
-  category_id: z.number(),
+  category_id: z.coerce.number(),
   slug: z.string().min(3),
   image_url: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  target_amount: z.number().nullable().optional(),
+  target_amount: z.coerce.number().nullable().optional(),
   end_date: z.string().nullable().optional(),
   // Bool flags
   is_zakat: z.boolean().default(false),
@@ -22,11 +22,11 @@ const campaignSchema = z.object({
   is_fixed_amount: z.boolean().default(false),
   is_bundle: z.boolean().default(false),
   // Numeric
-  minimum_amount: z.number().default(10000),
-  base_commission_pct: z.number().default(0),
-  sort: z.number().default(0),
+  minimum_amount: z.coerce.number().default(10000),
+  base_commission_pct: z.coerce.number().default(0),
+  sort: z.coerce.number().default(0),
   // Suggestion amounts array
-  suggestion_amounts: z.array(z.number()).optional().nullable(),
+  suggestion_amounts: z.array(z.coerce.number()).optional().nullable(),
   status: z.string().default('ACTIVE'),
 });
 
@@ -116,8 +116,10 @@ export async function POST(req: Request) {
         INSERT INTO campaigns (
           title, category_id, slug, image_url, description, 
           target_amount, end_date, is_zakat, is_qurban, has_no_target,
-          is_urgent, is_verified, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          has_no_time_limit, is_urgent, is_verified, is_fixed_amount,
+          is_bundle, minimum_amount, base_commission_pct, sort,
+          suggestion_amounts, status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         RETURNING id
       `;
       
@@ -126,7 +128,10 @@ export async function POST(req: Request) {
         validated.image_url, validated.description, 
         validated.target_amount, validated.end_date, 
         validated.is_zakat, validated.is_qurban, validated.has_no_target,
-        validated.is_urgent, validated.is_verified, validated.status
+        validated.has_no_time_limit, validated.is_urgent, validated.is_verified,
+        validated.is_fixed_amount, validated.is_bundle, validated.minimum_amount,
+        validated.base_commission_pct, validated.sort, validated.suggestion_amounts,
+        validated.status
       ]);
       
       const newId = res.rows[0].id;
@@ -134,10 +139,15 @@ export async function POST(req: Request) {
       return newId;
     });
     
-    await redis.flushall();
+    try {
+      await invalidateCache(['campaigns', 'campaigns_list']);
+    } catch (re) {
+      console.warn('Redis flush error:', re);
+    }
 
     return NextResponse.json({ id: result }, { status: 201 });
   } catch (error: any) {
+    console.error('API Campaigns POST Error:', error);
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -162,10 +172,17 @@ export async function PATCH(req: Request) {
     const sql = `UPDATE campaigns SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $${params.length} RETURNING *`;
     const res = await query(sql, params);
     
-    await redis.flushall();
+    if (res.rowCount === 0) return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+
+    try {
+      await invalidateCache(['campaigns', 'campaigns_list']);
+    } catch (re) {
+      console.warn('Redis flush error:', re);
+    }
 
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
+    console.error('API Campaigns PATCH Error:', error);
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -178,7 +195,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     await query('DELETE FROM campaigns WHERE id = $1', [id]);
-    await redis.flushall();
+    await invalidateCache(['campaigns', 'campaigns_list']);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

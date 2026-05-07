@@ -49,10 +49,15 @@ export async function POST(req: Request) {
       [campaign_id, title, excerpt || null, content, image_url || null]
     );
 
-    await redis.flushall();
+    try {
+      await redis.flushall();
+    } catch (re) {
+      console.warn('Redis flush error in campaign-updates:', re);
+    }
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error: any) {
+    console.error('API Campaign Updates POST Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

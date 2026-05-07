@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query, withTransaction } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { invalidateCache } from '@/lib/redis';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -125,10 +125,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     });
 
-    await redis.flushall();
+    try {
+      await invalidateCache(['campaigns', 'campaigns_list']);
+    } catch (re) {
+      console.warn('Redis flush error in [id] route:', re);
+    }
 
     return NextResponse.json({ success: true, message: 'Data berelasi berhasil disimpan.'});
   } catch (error: any) {
+    console.error('API Campaign [id] PATCH Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

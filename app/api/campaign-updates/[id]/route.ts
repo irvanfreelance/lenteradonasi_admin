@@ -18,10 +18,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Update not found' }, { status: 404 });
     }
 
-    await redis.flushall();
+    try {
+      await redis.flushall();
+    } catch (re) {
+      console.warn('Redis flush error in campaign-updates [id]:', re);
+    }
 
     return NextResponse.json(result.rows[0]);
   } catch (error: any) {
+    console.error('API Campaign Updates [id] PATCH Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -30,9 +35,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const id = (await params).id;
     await query('DELETE FROM campaign_updates WHERE id = $1', [id]);
-    await redis.flushall();
+    try {
+      await redis.flushall();
+    } catch (re) {
+      console.warn('Redis flush error:', re);
+    }
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error('API Campaign Updates [id] DELETE Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

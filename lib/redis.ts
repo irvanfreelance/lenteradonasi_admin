@@ -1,12 +1,27 @@
 import { Redis } from '@upstash/redis';
 
-// Determine if we should throw an error or handle silently if variables are missing
-// For admin panel, maybe we just mock it if not present so it doesn't crash in local dev
-// but since this is production critical, we should try to use the vars.
-const url = process.env.UPSTASH_REDIS_REST_URL || '';
-const token = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+const url = process.env.UPSTASH_REDIS_REST_URL;
+const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-export const redis = new Redis({
-  url: url || 'http://localhost:8079', // Fallback
-  token: token || 'default_token',
-});
+// Only initialize if we have the credentials
+export const redis = (url && token) 
+  ? new Redis({ url, token })
+  : null;
+
+/**
+ * Safely invalidate cache keys.
+ * Handles cases where Redis is not configured or fails.
+ */
+export async function invalidateCache(keys: string | string[]) {
+  if (!redis) return;
+  
+  try {
+    const keysArray = Array.isArray(keys) ? keys : [keys];
+    if (keysArray.length === 0) return;
+    
+    await redis.del(...keysArray);
+  } catch (error) {
+    // Log warning but don't crash the request
+    console.warn('Redis Invalidation Error:', error);
+  }
+}

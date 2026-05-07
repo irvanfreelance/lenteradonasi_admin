@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { invalidateCache } from '@/lib/redis';
 import { z } from 'zod';
 
 const categorySchema = z.object({
@@ -59,9 +59,14 @@ export async function POST(req: Request) {
       RETURNING *
     `;
     const res = await query(sql, [validated.name, validated.color_theme, validated.is_active]);
-    await redis.flushall();
+    try {
+      await invalidateCache(['categories', 'campaigns_list']);
+    } catch (re) {
+      console.warn('Redis flush error:', re);
+    }
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
+    console.error('API Categories POST Error:', error);
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -83,10 +88,15 @@ export async function PATCH(req: Request) {
 
     const sql = `UPDATE categories SET ${setClause} WHERE id = $${params.length} RETURNING *`;
     const res = await query(sql, params);
-    await redis.flushall();
+    try {
+      await invalidateCache(['categories', 'campaigns_list']);
+    } catch (re) {
+      console.warn('Redis flush error:', re);
+    }
 
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
+    console.error('API Categories PATCH Error:', error);
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -106,9 +116,14 @@ export async function DELETE(req: Request) {
     }
 
     await query('DELETE FROM categories WHERE id = $1', [id]);
-    await redis.flushall();
+    try {
+      await invalidateCache(['categories', 'campaigns_list']);
+    } catch (re) {
+      console.warn('Redis flush error:', re);
+    }
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error('API Categories DELETE Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

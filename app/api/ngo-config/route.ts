@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { invalidateCache } from '@/lib/redis';
 import { z } from 'zod';
 
 const configSchema = z.object({
@@ -120,7 +120,7 @@ export async function PATCH(req: Request) {
     }
     
     try {
-      await redis.flushall();
+      await invalidateCache(['ngo_config', 'ngo_settings']);
     } catch (redisError) {
       console.warn('Redis flush failed, but database was updated:', redisError);
     }
