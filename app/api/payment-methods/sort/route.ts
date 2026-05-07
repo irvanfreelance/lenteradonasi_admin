@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { redis, safeFlushCache } from '@/lib/redis';
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       }
     });
 
-    await redis.flushall();
+    await safeFlushCache();
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { redis, safeFlushCache } from '@/lib/redis';
 import { z } from 'zod';
 
 const adminSchema = z.object({
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       RETURNING id, name, email, role, status, created_at
     `;
     const res = await query(sql, [validated.name, validated.email, validated.role, validated.status, password_hash]);
-    await redis.flushall();
+    await safeFlushCache();
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -85,7 +85,7 @@ export async function PATCH(req: Request) {
     const sql = `UPDATE admins SET ${setClause} WHERE id = $${params.length} RETURNING id, name, email, role, status, created_at`;
     const res = await query(sql, params);
 
-    await redis.flushall();
+    await safeFlushCache();
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -101,7 +101,7 @@ export async function DELETE(req: Request) {
 
     // Prevent deleting self? (Normally handled by auth context, but here simplified)
     await query('DELETE FROM admins WHERE id = $1', [id]);
-    await redis.flushall();
+    await safeFlushCache();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

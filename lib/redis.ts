@@ -25,3 +25,15 @@ export async function invalidateCache(keys: string | string[]) {
     console.warn('Redis Invalidation Error:', error);
   }
 }
+
+/**
+ * Safely flush all cache.
+ */
+export async function safeFlushCache() {
+  if (!redis) return;
+  try {
+    await redis.flushall();
+  } catch (error) {
+    console.warn('Redis Flush Error:', error);
+  }
+}

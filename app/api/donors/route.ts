@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { redis, safeFlushCache } from '@/lib/redis';
 
 import { z } from 'zod';
 
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       RETURNING *
     `;
     const res = await query(sql, [validated.name, validated.email, validated.phone]);
-    await redis.flushall();
+    await safeFlushCache();
     return NextResponse.json(res.rows[0], { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -86,7 +86,7 @@ export async function PATCH(req: Request) {
     const sql = `UPDATE donors SET ${setClause} WHERE id = $${params.length} RETURNING *`;
     const res = await query(sql, params);
 
-    await redis.flushall();
+    await safeFlushCache();
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ errors: error.issues }, { status: 400 });
@@ -101,7 +101,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     await query('DELETE FROM donors WHERE id = $1', [id]);
-    await redis.flushall();
+    await safeFlushCache();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

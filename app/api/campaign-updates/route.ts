@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { redis, safeFlushCache } from '@/lib/redis';
 
 export async function GET(req: Request) {
   try {
@@ -49,11 +49,7 @@ export async function POST(req: Request) {
       [campaign_id, title, excerpt || null, content, image_url || null]
     );
 
-    try {
-      await redis.flushall();
-    } catch (re) {
-      console.warn('Redis flush error in campaign-updates:', re);
-    }
+    await safeFlushCache();
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error: any) {

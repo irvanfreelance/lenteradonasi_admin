@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { redis, safeFlushCache } from '@/lib/redis';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,11 +18,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Update not found' }, { status: 404 });
     }
 
-    try {
-      await redis.flushall();
-    } catch (re) {
-      console.warn('Redis flush error in campaign-updates [id]:', re);
-    }
+    await safeFlushCache();
 
     return NextResponse.json(result.rows[0]);
   } catch (error: any) {
@@ -35,11 +31,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const id = (await params).id;
     await query('DELETE FROM campaign_updates WHERE id = $1', [id]);
-    try {
-      await redis.flushall();
-    } catch (re) {
-      console.warn('Redis flush error:', re);
-    }
+    await safeFlushCache();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('API Campaign Updates [id] DELETE Error:', error);
