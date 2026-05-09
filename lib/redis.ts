@@ -1,7 +1,8 @@
 import { Redis } from '@upstash/redis';
 
-const url = process.env.UPSTASH_REDIS_REST_URL;
-const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+// Support both Vercel KV naming (KV_REST_API_*) and legacy UPSTASH_REDIS_REST_* names
+const url   = process.env.UPSTASH_REDIS_REST_URL   || process.env.KV_REST_API_URL;
+const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
 // Only initialize if we have the credentials
 export const redis = (url && token) 
