@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import useSWR from 'swr';
 import { 
-  Plus, Search, Edit, Trash2, Eye, GripVertical, X, Save, Loader2, Copy
+  Plus, Search, Edit, Trash2, Eye, GripVertical, X, Save, Loader2, Copy, Image as ImageIcon
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -94,6 +94,18 @@ function SortableRow({ camp, idx, offset, formatIDR, router, handleDelete, handl
           {camp.category_name}
         </span>
       </td>
+      <td className="px-6 py-5 text-center">
+        {camp.is_carousel ? (
+          <div className="flex flex-col items-center gap-1">
+             <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg" title="Aktif di Carousel">
+               <ImageIcon size={14} />
+             </div>
+             <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-tighter">Carousel</span>
+          </div>
+        ) : (
+          <span className="text-[10px] text-slate-300 font-medium">—</span>
+        )}
+      </td>
       <td className="px-6 py-5">
         <div className="flex flex-col gap-1.5 min-w-[150px] text-left">
           <div className="flex justify-between items-end">
@@ -159,7 +171,7 @@ export default function CampaignsPage() {
   const [formData, setFormData] = useState({
     title: '', category_id: 0, slug: '', image_url: '', description: '',
     target_amount: 0, end_date: '', is_zakat: false, is_qurban: false, 
-    has_no_target: false, is_urgent: false, is_verified: true, status: 'ACTIVE'
+    has_no_target: false, is_urgent: false, is_verified: true, is_carousel: false, status: 'ACTIVE'
   });
 
   const queryParams = new URLSearchParams({
@@ -247,6 +259,7 @@ export default function CampaignsPage() {
               has_no_target: camp.has_no_target,
               is_urgent: camp.is_urgent,
               is_verified: camp.is_verified,
+              is_carousel: camp.is_carousel,
               status: camp.status,
             };
             const res = await fetch('/api/campaigns', {
@@ -356,6 +369,7 @@ export default function CampaignsPage() {
                   <th className="px-6 py-4 border-b border-slate-100 font-bold w-12 text-center">#</th>
                   <th className="px-6 py-4 border-b border-slate-100 font-bold">Judul Kampanye</th>
                   <th className="px-6 py-4 border-b border-slate-100 font-bold">Kategori</th>
+                  <th className="px-6 py-4 border-b border-slate-100 text-center font-bold">Carousel</th>
                   <th className="px-6 py-4 border-b border-slate-100 font-bold">Progres Donasi</th>
                   <th className="px-6 py-4 border-b border-slate-100 text-center font-bold">Status</th>
                   <th className="px-6 py-4 border-b border-slate-100 text-center font-bold">Aksi</th>
@@ -441,7 +455,7 @@ export default function CampaignsPage() {
                 <input type="date" value={formData.end_date} onChange={(e) => setFormData({...formData, end_date: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 text-sm font-normal text-slate-900 focus:outline-none focus:border-teal-500/50" />
               </div>
               <div className="col-span-2 flex flex-wrap gap-4 pt-2">
-                {['is_zakat', 'is_qurban', 'has_no_target', 'is_urgent'].map((field) => (
+                {['is_zakat', 'is_qurban', 'has_no_target', 'is_urgent', 'is_carousel'].map((field) => (
                   <label key={field} className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-100 flex-1 min-w-[120px]">
                     <input type="checkbox" checked={(formData as any)[field]} onChange={(e) => setFormData({...formData, [field]: e.target.checked})} className="w-4 h-4 text-teal-600 rounded border-slate-300" />
                     <span className="text-[10px] font-semibold text-slate-600">{field.replace(/_/g, ' ')}</span>

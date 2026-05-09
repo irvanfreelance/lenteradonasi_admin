@@ -16,7 +16,62 @@ export async function GET(req: Request) {
     // Show all data by default unless filtered
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const type = searchParams.get('type') || 'invoices';
+    const affiliateId = searchParams.get('affiliateId');
     
+    if (type === 'transactions') {
+      let sql = `
+        SELECT 
+          t.id, t.amount, t.qty, t.affiliate_commission, t.created_at,
+          i.invoice_code, i.donor_name_snapshot, i.status,
+          c.title as campaign_title,
+          a.name as affiliate_name, a.affiliate_code,
+          COUNT(*) OVER() as total_count
+        FROM transactions t
+        JOIN invoices i ON t.invoice_id = i.id AND t.invoice_created_at = i.created_at
+        JOIN campaigns c ON t.campaign_id = c.id
+        LEFT JOIN affiliates a ON t.affiliate_id = a.id
+        WHERE 1=1
+      `;
+      
+      const params: any[] = [];
+      
+      if (startDate) {
+        sql += ` AND t.created_at >= $${params.length + 1}`;
+        params.push(startDate);
+      }
+      if (endDate) {
+        sql += ` AND t.created_at <= $${params.length + 1}`;
+        params.push(endDate);
+      }
+      if (status && status !== 'ALL') {
+        sql += ` AND i.status = $${params.length + 1}`;
+        params.push(status);
+      }
+      if (search) {
+        sql += ` AND (i.invoice_code ILIKE $${params.length + 1} OR i.donor_name_snapshot ILIKE $${params.length + 1} OR a.name ILIKE $${params.length + 1})`;
+        params.push(`%${search}%`);
+      }
+      if (campaignId) {
+        sql += ` AND t.campaign_id = $${params.length + 1}`;
+        params.push(campaignId);
+      }
+      if (affiliateId) {
+        sql += ` AND t.affiliate_id = $${params.length + 1}`;
+        params.push(affiliateId);
+      }
+      
+      sql += `
+        ORDER BY t.created_at DESC
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      `;
+      params.push(limit, offset);
+      
+      const res = await query(sql, params);
+      return NextResponse.json(res.rows);
+    }
+    
+    // Default Invoices View
     let sql = `
       SELECT 
         i.id, i.invoice_code, i.donor_name_snapshot, i.total_amount, 

@@ -21,6 +21,7 @@ const campaignSchema = z.object({
   is_verified: z.boolean().default(true),
   is_fixed_amount: z.boolean().default(false),
   is_bundle: z.boolean().default(false),
+  is_carousel: z.boolean().default(false),
   // Numeric
   minimum_amount: z.coerce.number().default(10000),
   base_commission_pct: z.coerce.number().default(0),
@@ -117,9 +118,9 @@ export async function POST(req: Request) {
           title, category_id, slug, image_url, description, 
           target_amount, end_date, is_zakat, is_qurban, has_no_target,
           has_no_time_limit, is_urgent, is_verified, is_fixed_amount,
-          is_bundle, minimum_amount, base_commission_pct, sort,
+          is_bundle, is_carousel, minimum_amount, base_commission_pct, sort,
           suggestion_amounts, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
         RETURNING id
       `;
       
@@ -129,7 +130,7 @@ export async function POST(req: Request) {
         validated.target_amount, validated.end_date, 
         validated.is_zakat, validated.is_qurban, validated.has_no_target,
         validated.has_no_time_limit, validated.is_urgent, validated.is_verified,
-        validated.is_fixed_amount, validated.is_bundle, validated.minimum_amount,
+        validated.is_fixed_amount, validated.is_bundle, validated.is_carousel, validated.minimum_amount,
         validated.base_commission_pct, validated.sort, validated.suggestion_amounts,
         validated.status
       ]);

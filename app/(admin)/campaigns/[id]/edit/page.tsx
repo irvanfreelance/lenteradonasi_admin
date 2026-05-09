@@ -5,8 +5,9 @@ import useSWR from 'swr';
 import { useRouter, useParams } from 'next/navigation';
 import { 
   ChevronLeft, Save, Loader2, X, Image as ImageIcon,
-  CheckCircle2, AlertCircle, Plus, Trash2, QrCode, Package, Tags
+  CheckCircle2, AlertCircle, Plus, Trash2, QrCode, Package, Tags, Download
 } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { toast } from 'sonner';
 import { NumberInput } from '@/components/ui/number-input';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -47,6 +48,7 @@ export default function EditCampaignPage() {
         is_verified: campaign.is_verified ?? true,
         is_fixed_amount: campaign.is_fixed_amount || false,
         is_bundle: campaign.is_bundle || false,
+        is_carousel: campaign.is_carousel || false,
         has_no_target: campaign.has_no_target || false,
         has_no_time_limit: campaign.has_no_time_limit || false,
         // Numeric
@@ -112,6 +114,18 @@ export default function EditCampaignPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const downloadQR = (id: string, name: string) => {
+    const canvas = document.getElementById(id) as HTMLCanvasElement;
+    if (!canvas) return;
+    const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+    let downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `QRIS_${name}.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   };
 
   if (isFetching || !formData) return <div className="p-8 animate-pulse text-center">Loading campaign data...</div>;
@@ -291,6 +305,7 @@ export default function EditCampaignPage() {
              <div className="grid grid-cols-2 gap-3">
              {[
                { id: 'is_urgent', label: 'Darurat', icon: AlertCircle, color: 'text-rose-500' },
+               { id: 'is_carousel', label: 'Carousel', icon: ImageIcon, color: 'text-indigo-500' },
                { id: 'is_zakat', label: 'Zakat', icon: CheckCircle2, color: 'text-emerald-500' },
                { id: 'is_qurban', label: 'Qurban', icon: CheckCircle2, color: 'text-amber-500' },
                { id: 'is_verified', label: 'Verified', icon: CheckCircle2, color: 'text-blue-500' },
@@ -488,31 +503,58 @@ export default function EditCampaignPage() {
               <div className="p-4 space-y-3">
                 {qrisStatic.map((q: any, i: number) => (
                   <div key={i} className="grid grid-cols-12 gap-3 items-start bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-                    <div className="col-span-3">
+                    <div className="col-span-2">
                       <label className="text-[10px] font-semibold text-slate-400 uppercase mb-1 block">External ID</label>
                       <input
                         value={q.external_id}
                         onChange={(e) => { const u = [...qrisStatic]; u[i].external_id = e.target.value; setQrisStatic(u); }}
-                        placeholder="External ID dari Payment Gateway"
-                        className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm text-slate-800 focus:outline-none focus:border-teal-400"
+                        placeholder="External ID"
+                        className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-400"
                       />
                     </div>
-                    <div className="col-span-6">
+                    <div className="col-span-5">
                       <label className="text-[10px] font-semibold text-slate-400 uppercase mb-1 block">QRIS String</label>
                       <textarea
                         rows={2}
                         value={q.qris_string}
                         onChange={(e) => { const u = [...qrisStatic]; u[i].qris_string = e.target.value; setQrisStatic(u); }}
-                        placeholder="Raw QR String / Payload"
-                        className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm text-slate-800 focus:outline-none focus:border-teal-400 font-mono"
+                        placeholder="Raw QR String"
+                        className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-400 font-mono"
                       />
+                    </div>
+                    <div className="col-span-2 flex flex-col items-center">
+                      <label className="text-[10px] font-semibold text-slate-400 uppercase mb-1 block">Preview</label>
+                      <div className="bg-white p-1 rounded-lg border border-slate-200 relative group">
+                        {q.qris_string ? (
+                          <>
+                            <QRCodeCanvas
+                              id={`qris-canvas-${i}`}
+                              value={q.qris_string}
+                              size={60}
+                              level="M"
+                              includeMargin={false}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => downloadQR(`qris-canvas-${i}`, q.external_id || `qris-${i}`)}
+                              className="absolute inset-0 bg-teal-600/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg"
+                            >
+                              <Download size={16} />
+                            </button>
+                          </>
+                        ) : (
+                          <div className="w-[60px] h-[60px] flex items-center justify-center text-[8px] text-slate-300 text-center leading-tight">
+                            Input string<br/>dulu
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="col-span-2">
                       <label className="text-[10px] font-semibold text-slate-400 uppercase mb-1 block">Status</label>
                       <select
                         value={q.status}
                         onChange={(e) => { const u = [...qrisStatic]; u[i].status = e.target.value; setQrisStatic(u); }}
-                        className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm text-slate-800 focus:outline-none focus:border-teal-400"
+                        className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-teal-400"
                       >
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="INACTIVE">INACTIVE</option>

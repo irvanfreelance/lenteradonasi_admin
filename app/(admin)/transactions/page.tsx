@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import useSWR from 'swr';
 import { 
   Search, Filter, Download,
-  CheckCircle, Trash2, Eye, X
+  CheckCircle, Trash2, Eye, X, Users
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { clsx, type ClassValue } from 'clsx';
@@ -38,7 +38,13 @@ const DEFAULT_FILTERS = {
   campaignId: '' as string | number,
   status:     'ALL',
   search:     '',
+  affiliateId: '' as string | number,
 };
+
+const TABS = [
+  { id: 'invoices', label: 'Invoices' },
+  { id: 'transactions', label: 'Donations' },
+];
 
 type Filters = typeof DEFAULT_FILTERS;
 
@@ -46,6 +52,7 @@ type Filters = typeof DEFAULT_FILTERS;
 export default function TransactionsPage() {
   // draft  = values user is currently editing inside the filter panel
   const [draft,   setDraft]   = useState<Filters>({ ...DEFAULT_FILTERS });
+  const [activeTab, setActiveTab] = useState('invoices');
   // applied = values that actually drive the SWR query (committed on button click)
   const [applied, setApplied] = useState<Filters>({ ...DEFAULT_FILTERS });
 
@@ -62,6 +69,12 @@ export default function TransactionsPage() {
     { revalidateOnFocus: false }
   );
 
+  const { data: affiliateOptions } = useSWR<{ id: number; name: string }[]>(
+    '/api/affiliates',
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
   // How many applied filters deviate from the default
   const activeFilterCount = [
     applied.startDate  !== DEFAULT_FILTERS.startDate,
@@ -71,6 +84,7 @@ export default function TransactionsPage() {
     applied.campaignId !== '',
     applied.status     !== 'ALL',
     applied.search     !== '',
+    applied.affiliateId !== '',
   ].filter(Boolean).length;
 
   const queryParams = new URLSearchParams({
@@ -83,6 +97,8 @@ export default function TransactionsPage() {
     ...(applied.minAmount  && { minAmount:  String(applied.minAmount)  }),
     ...(applied.maxAmount  && { maxAmount:  String(applied.maxAmount)  }),
     ...(applied.campaignId && { campaignId: String(applied.campaignId) }),
+    ...(applied.affiliateId && { affiliateId: String(applied.affiliateId) }),
+    type: activeTab,
   });
 
   const { data: transactions, error, isLoading, mutate } = useSWR(
@@ -196,6 +212,27 @@ export default function TransactionsPage() {
         </div>
       </div>
 
+      {/* ── Tabs ── */}
+      <div className="flex border-b border-slate-100">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => {
+              setActiveTab(tab.id);
+              setPage(1);
+            }}
+            className={cn(
+              "px-8 py-4 text-sm font-medium transition-all relative border-b-2",
+              activeTab === tab.id 
+                ? "text-indigo-600 border-indigo-500 bg-indigo-50/30" 
+                : "text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-50/50"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* ── Advanced Filter Panel ── */}
       {isFilterOpen && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-visible animate-in slide-in-from-top-2 duration-300">
@@ -283,6 +320,18 @@ export default function TransactionsPage() {
                 />
               </div>
               <div className="text-left">
+                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Affiliate</label>
+                <SearchableSelect
+                  value={draft.affiliateId}
+                  onChange={(val) => setDraft(d => ({ ...d, affiliateId: val }))}
+                  placeholder="Semua Affiliate"
+                  options={[
+                    { id: '', name: 'Semua Affiliate' },
+                    ...(Array.isArray(affiliateOptions) ? affiliateOptions : []).map((a: any) => ({ id: a.id, name: a.name }))
+                  ]}
+                />
+              </div>
+              <div className="text-left">
                 <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Pencarian</label>
                 <div className="relative">
                   <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -352,6 +401,12 @@ export default function TransactionsPage() {
               <button onClick={() => removeChip('search', '')}><X size={11} /></button>
             </span>
           )}
+          {applied.affiliateId && (
+            <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-100">
+              Affiliate: {(Array.isArray(affiliateOptions) ? affiliateOptions : []).find((a: any) => String(a.id) === String(applied.affiliateId))?.name ?? applied.affiliateId}
+              <button onClick={() => removeChip('affiliateId', '')}><X size={11} /></button>
+            </span>
+          )}
 
           <button
             onClick={handleResetFilters}
@@ -381,14 +436,14 @@ export default function TransactionsPage() {
               {isLoading ? (
                 [...Array(limit)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={7} className="h-16 px-6 py-4" />
+                    <td colSpan={activeTab === 'invoices' ? 7 : 6} className="h-16 px-6 py-4" />
                   </tr>
                 ))
               ) : transactions?.length > 0 ? (
                 transactions.map((trx: any, idx: number) => (
                   <tr
                     key={trx.id}
-                    onMouseEnter={() => router.prefetch(`/transactions/${trx.invoice_code}`)}
+                    onMouseEnter={() => activeTab === 'invoices' && router.prefetch(`/transactions/${trx.invoice_code}`)}
                     className="hover:bg-slate-50/50 transition-colors group"
                   >
                     <td className="px-6 py-5 border-b border-slate-50 text-center text-xs font-normal text-slate-400 bg-slate-50/20">
@@ -404,14 +459,32 @@ export default function TransactionsPage() {
                       <p className="font-semibold text-slate-800 text-sm text-left">{trx.donor_name_snapshot}</p>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <p className="font-normal text-slate-800 text-sm tracking-tight">{formatIDR(trx.total_amount)}</p>
+                      <p className="font-normal text-slate-800 text-sm tracking-tight">
+                        {activeTab === 'invoices' ? formatIDR(trx.total_amount) : formatIDR(trx.amount)}
+                      </p>
+                      {activeTab === 'transactions' && trx.affiliate_commission > 0 && (
+                        <p className="text-[10px] text-emerald-600 font-medium">Comm: {formatIDR(trx.affiliate_commission)}</p>
+                      )}
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex flex-col text-left">
-                        <span className="text-[10px] font-normal text-teal-600">{trx.payment_method}</span>
-                        <span className="text-xs text-slate-400 mt-1 line-clamp-1 italic">
-                          {trx.campaigns?.map((c: any) => c.title).join(', ') || 'No campaign'}
-                        </span>
+                        {activeTab === 'invoices' ? (
+                          <>
+                            <span className="text-[10px] font-normal text-teal-600">{trx.payment_method}</span>
+                            <span className="text-xs text-slate-400 mt-1 line-clamp-1 italic">
+                              {trx.campaigns?.map((c: any) => c.title).join(', ') || 'No campaign'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs font-medium text-slate-800 line-clamp-1">{trx.campaign_title}</span>
+                            {trx.affiliate_name && (
+                              <span className="text-[10px] text-indigo-600 font-bold mt-1 uppercase tracking-wider flex items-center gap-1">
+                                <Users size={10} /> {trx.affiliate_name}
+                              </span>
+                            )}
+                          </>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-5 text-center">
@@ -425,24 +498,26 @@ export default function TransactionsPage() {
                         {trx.status === 'PAID' ? 'Lunas' : trx.status === 'PENDING' ? 'Pending' : trx.status === 'EXPIRED' ? 'Kedaluwarsa' : 'Batal'}
                       </span>
                     </td>
-                    <td className="px-6 py-5">
-                      <div className="flex justify-center gap-1">
-                        <button onClick={() => handleUpdateStatus(trx.id, trx.created_at, 'PAID')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Mark as Paid">
-                          <CheckCircle size={18} />
-                        </button>
-                        <button onClick={() => handleDelete(trx.id, trx.created_at)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
-                          <Trash2 size={18} />
-                        </button>
-                        <button onClick={() => router.push(`/transactions/${trx.invoice_code}`)} className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all" title="Detail Transaksi">
-                          <Eye size={18} />
-                        </button>
-                      </div>
-                    </td>
+                    {activeTab === 'invoices' && (
+                      <td className="px-6 py-5">
+                        <div className="flex justify-center gap-1">
+                          <button onClick={() => handleUpdateStatus(trx.id, trx.created_at, 'PAID')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Mark as Paid">
+                            <CheckCircle size={18} />
+                          </button>
+                          <button onClick={() => handleDelete(trx.id, trx.created_at)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
+                            <Trash2 size={18} />
+                          </button>
+                          <button onClick={() => router.push(`/transactions/${trx.invoice_code}`)} className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all" title="Detail Transaksi">
+                            <Eye size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">No transactions found.</td>
+                  <td colSpan={activeTab === 'invoices' ? 7 : 6} className="px-6 py-12 text-center text-slate-400 italic">No transactions found.</td>
                 </tr>
               )}
             </tbody>

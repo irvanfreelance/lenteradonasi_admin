@@ -24,7 +24,7 @@ async function seed() {
     console.log('⏳ Starting database seeding...');
     
     // Read SQL file
-    const sqlPath = path.join(__dirname, '../refs/lenteradonasi.sql');
+    const sqlPath = path.join(__dirname, '../refs/9maydonasi.sql');
     const sql = fs.readFileSync(sqlPath, 'utf-8');
 
     // Split SQL by semicolons, but be careful with functions/triggers if any

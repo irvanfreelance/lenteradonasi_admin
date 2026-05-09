@@ -27,7 +27,7 @@ export default function NewCampaignPage() {
   const [formData, setFormData] = useState({
     title: '', category_id: 0, slug: '', image_url: '', description: '',
     target_amount: 0, end_date: '', is_zakat: false, is_qurban: false, 
-    has_no_target: false, is_urgent: false, is_verified: true, status: 'ACTIVE'
+    has_no_target: false, is_urgent: false, is_verified: true, is_carousel: false, status: 'ACTIVE'
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -188,6 +188,7 @@ export default function NewCampaignPage() {
              <h3 className="text-sm font-normal text-slate-800 tracking-tight text-left">Atribut Kampanye</h3>
              {[
                { id: 'is_urgent', label: 'Darurat / Mendesak', icon: AlertCircle, color: 'text-rose-500' },
+               { id: 'is_carousel', label: 'Tampilkan di Carousel', icon: ImageIcon, color: 'text-indigo-500' },
                { id: 'is_zakat', label: 'Program Zakat', icon: CheckCircle2, color: 'text-emerald-500' },
                { id: 'is_qurban', label: 'Program Qurban', icon: CheckCircle2, color: 'text-amber-500' },
                { id: 'is_verified', label: 'Campaign Diverifikasi', icon: CheckCircle2, color: 'text-blue-500' },
