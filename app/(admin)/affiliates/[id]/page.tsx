@@ -7,7 +7,7 @@ import {
   ArrowLeft, Edit, Save, Loader2, X, Plus, Trash2,
   Users, Calendar, Percent,
   Banknote, AlertCircle, CheckCircle, Clock,
-  TrendingUp, Wallet,
+  TrendingUp, Wallet, Receipt
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -61,7 +61,7 @@ interface Withdrawal {
   total_count?: number;
 }
 
-type TabId = 'commissions' | 'withdrawals';
+type TabId = 'commissions' | 'transactions' | 'withdrawals';
 
 const fetcher = (url: string) =>
   fetch(url).then(async (res) => {
@@ -322,6 +322,84 @@ export default function AffiliateDetailPage() {
     },
   ];
 
+  // ── Transactions ────────────────────────────────────────────────────────
+  const [tPage, setTPage] = useState(1);
+  const [tLimit, setTLimit] = useState(10);
+  const tOffset = (tPage - 1) * tLimit;
+
+  const {
+    data: transactions,
+    isLoading: transactionsLoading,
+  } = useSWR<any[]>(
+    activeTab === 'transactions' 
+      ? `/api/transactions?type=transactions&affiliateId=${affiliateId}&limit=${tLimit}&offset=${tOffset}` 
+      : null,
+    fetcher
+  );
+
+  const tTotalCount = (transactions as any)?.[0]?.total_count ?? 0;
+  const tTotalPages = Math.ceil(tTotalCount / tLimit);
+
+  const transactionColumns = [
+    {
+      header: '#',
+      headerClassName: 'w-12 text-center',
+      className: 'text-center text-xs text-slate-400',
+      cell: (_: any, idx: number) => tOffset + idx + 1,
+    },
+    {
+      header: 'Waktu & Kode',
+      cell: (t: any) => (
+        <div className="flex flex-col text-left">
+          <span className="font-semibold text-slate-800 text-sm">{t.invoice_code}</span>
+          <span className="text-[10px] text-slate-400 mt-0.5">
+            {new Date(t.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: 'Donatur',
+      cell: (t: any) => (
+        <span className="font-medium text-slate-700 text-sm">{t.donor_name_snapshot}</span>
+      ),
+    },
+    {
+      header: 'Kampanye',
+      cell: (t: any) => (
+        <span className="text-xs text-slate-600 line-clamp-1 max-w-[200px]">{t.campaign_title}</span>
+      ),
+    },
+    {
+      header: 'Nominal',
+      headerClassName: 'text-right',
+      className: 'text-right',
+      cell: (t: any) => (
+        <span className="font-bold text-slate-800">{formatIDR(t.amount)}</span>
+      ),
+    },
+    {
+      header: 'Komisi',
+      headerClassName: 'text-right',
+      className: 'text-right',
+      cell: (t: any) => (
+        <span className="font-bold text-emerald-600">{formatIDR(t.affiliate_commission)}</span>
+      ),
+    },
+    {
+      header: 'Status',
+      className: 'text-center',
+      cell: (t: any) => (
+        <span className={cn(
+          "px-2.5 py-1 rounded-full text-[10px] font-bold border shadow-sm",
+          t.status === 'PAID' ? "bg-teal-50 text-teal-700 border-teal-100" : "bg-amber-50 text-amber-700 border-amber-100"
+        )}>
+          {t.status === 'PAID' ? 'Lunas' : 'Pending'}
+        </span>
+      ),
+    },
+  ];
+
   // ── Error state ────────────────────────────────────────────────────────
   if (affError) {
     return (
@@ -334,6 +412,7 @@ export default function AffiliateDetailPage() {
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'commissions', label: 'Komisi Kampanye', icon: <Percent size={15} /> },
+    { id: 'transactions', label: 'Data Transaksi', icon: <Receipt size={15} /> },
     { id: 'withdrawals', label: 'Riwayat Withdrawal', icon: <Wallet size={15} /> },
   ];
 
@@ -428,6 +507,11 @@ export default function AffiliateDetailPage() {
               {tab.id === 'commissions' && commissions && commissions.length > 0 && (
                 <span className="ml-1 bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
                   {commissions.length}
+                </span>
+              )}
+              {tab.id === 'transactions' && tTotalCount > 0 && (
+                <span className="ml-1 bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {tTotalCount}
                 </span>
               )}
               {tab.id === 'withdrawals' && wTotalCount > 0 && (
@@ -635,6 +719,46 @@ export default function AffiliateDetailPage() {
               onPageChange={setCPage}
               onLimitChange={(l) => { setCLimit(l); setCPage(1); }}
               isLoading={commissionsLoading}
+            />
+          </div>
+        )}
+
+        {/* ── Tab: Transactions ── */}
+        {activeTab === 'transactions' && (
+          <div className="p-6 space-y-6">
+            <div className="bg-slate-50 rounded-2xl border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="text-left">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Grand Total Raised</p>
+                <p className="text-3xl font-black text-slate-800">{formatIDR(affiliateRow?.raised_amount ?? 0)}</p>
+              </div>
+              <div className="flex gap-4">
+                <div className="bg-white px-5 py-3 rounded-xl border border-slate-100 text-left">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Transaksi</p>
+                  <p className="text-xl font-bold text-slate-800">{tTotalCount}</p>
+                </div>
+                <div className="bg-white px-5 py-3 rounded-xl border border-slate-100 text-left">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Donatur</p>
+                  <p className="text-xl font-bold text-slate-800">{affiliateRow?.converted_donors ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            <DataTable
+              columns={transactionColumns}
+              data={(transactions ?? []) as any[]}
+              isLoading={transactionsLoading}
+              emptyMessage="Belum ada transaksi untuk afiliasi ini."
+            />
+            
+            <Pagination
+              currentPage={tPage}
+              totalPages={tTotalPages || 1}
+              totalCount={tTotalCount}
+              offset={tOffset}
+              limit={tLimit}
+              onPageChange={setTPage}
+              onLimitChange={(l) => { setTLimit(l); setTPage(1); }}
+              isLoading={transactionsLoading}
             />
           </div>
         )}

@@ -23,8 +23,7 @@ export async function POST(req: Request) {
       await client.query(sql, params);
     });
 
-    // Safely invalidate cache
-    await invalidateCache(['campaigns', 'campaigns_list']);
+    await invalidateCache(['campaigns', 'campaigns_list', 'api:campaigns:carousel_v1']);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -141,7 +141,7 @@ export async function POST(req: Request) {
     });
     
     try {
-      await invalidateCache(['campaigns', 'campaigns_list']);
+      await invalidateCache(['campaigns', 'campaigns_list', 'api:campaigns:carousel_v1']);
     } catch (re) {
       console.warn('Redis flush error:', re);
     }
@@ -176,7 +176,7 @@ export async function PATCH(req: Request) {
     if (res.rowCount === 0) return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
 
     try {
-      await invalidateCache(['campaigns', 'campaigns_list']);
+      await invalidateCache(['campaigns', 'campaigns_list', 'api:campaigns:carousel_v1']);
     } catch (re) {
       console.warn('Redis flush error:', re);
     }
@@ -196,7 +196,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     await query('DELETE FROM campaigns WHERE id = $1', [id]);
-    await invalidateCache(['campaigns', 'campaigns_list']);
+    await invalidateCache(['campaigns', 'campaigns_list', 'api:campaigns:carousel_v1']);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import * as XLSX from 'xlsx';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -39,6 +40,7 @@ const DEFAULT_FILTERS = {
   status:     'ALL',
   search:     '',
   affiliateId: '' as string | number,
+  paymentMethodId: '' as string | number,
 };
 
 const TABS = [
@@ -70,7 +72,13 @@ export default function TransactionsPage() {
   );
 
   const { data: affiliateOptions } = useSWR<{ id: number; name: string }[]>(
-    '/api/affiliates',
+    '/api/affiliates?limit=1000',
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
+  const { data: paymentMethods } = useSWR<any[]>(
+    '/api/payment-methods',
     fetcher,
     { revalidateOnFocus: false }
   );
@@ -177,6 +185,63 @@ export default function TransactionsPage() {
     });
   };
 
+  const handleExport = async () => {
+    try {
+      toast.loading('Mempersiapkan data export...');
+      // Fetch all filtered data by using a large limit
+      const exportParams = new URLSearchParams(queryParams);
+      exportParams.set('limit', '5000');
+      exportParams.set('offset', '0');
+
+      const res = await fetch(`/api/transactions?${exportParams.toString()}`);
+      if (!res.ok) throw new Error('Gagal mengambil data export');
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        toast.error('Tidak ada data untuk diexport');
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(data.map((item: any) => {
+        if (activeTab === 'invoices') {
+          return {
+            'Kode Invoice': item.invoice_code,
+            'Waktu': formatDate(item.created_at),
+            'Donatur': item.donor_name_snapshot,
+            'Nominal': item.total_amount,
+            'Metode Pembayaran': item.payment_method,
+            'Status': item.status,
+            'Kampanye': item.campaigns?.map((c: any) => c.title).join(', ')
+          };
+        } else {
+          return {
+            'Invoice': item.invoice_code,
+            'Waktu': formatDate(item.created_at),
+            'Donatur': item.donor_name_snapshot,
+            'Nominal': item.amount,
+            'Kampanye': item.campaign_title,
+            'Affiliate': item.affiliate_name || '-',
+            'Affiliate Code': item.affiliate_code || '-',
+            'Komisi': item.affiliate_commission,
+            'Status': item.status
+          };
+        }
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, activeTab === 'invoices' ? 'Invoices' : 'Donations');
+      
+      const fileName = `Export_${activeTab}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+      
+      toast.dismiss();
+      toast.success('Data berhasil diexport');
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err.message);
+    }
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -206,8 +271,11 @@ export default function TransactionsPage() {
               </span>
             )}
           </button>
-          <button className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-normal text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-            <Download size={18} /> Export
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-normal text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <Download size={18} /> Export Excel
           </button>
         </div>
       </div>
@@ -231,6 +299,82 @@ export default function TransactionsPage() {
             {tab.label}
           </button>
         ))}
+      </div>
+      
+      {/* ── Quick Filter Bar ── */}
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center">
+        <div className="relative flex-1 min-w-[200px] group text-left">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+          <input
+            type="text"
+            placeholder="Cari invoice atau donatur..."
+            value={draft.search}
+            onChange={(e) => {
+              setDraft(d => ({ ...d, search: e.target.value }));
+              // Auto-apply search for better UX
+              setApplied(a => ({ ...a, search: e.target.value }));
+              setPage(1);
+            }}
+            className="pl-10 h-10 w-full bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-indigo-500/50 transition-all"
+          />
+        </div>
+        
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="w-full sm:w-48 text-left">
+            <SearchableSelect
+              value={draft.status}
+              onChange={(val) => {
+                setDraft(d => ({ ...d, status: String(val) }));
+                setApplied(a => ({ ...a, status: String(val) }));
+                setPage(1);
+              }}
+              options={[
+                { id: 'ALL', name: 'Semua Status' },
+                { id: 'PAID', name: 'Lunas' },
+                { id: 'PENDING', name: 'Pending' },
+                { id: 'EXPIRED', name: 'Kedaluwarsa' },
+                { id: 'CANCELLED', name: 'Batal' }
+              ]}
+              className="h-10"
+            />
+          </div>
+
+          <div className="w-full sm:w-64 text-left">
+            <SearchableSelect
+              value={draft.affiliateId}
+              onChange={(val) => {
+                setDraft(d => ({ ...d, affiliateId: val }));
+                setApplied(a => ({ ...a, affiliateId: val }));
+                setPage(1);
+              }}
+              placeholder="Semua Affiliate"
+              options={[
+                { id: '', name: 'Semua Affiliate' },
+                ...(Array.isArray(affiliateOptions) ? affiliateOptions : []).map((a: any) => ({ id: a.id, name: a.name }))
+              ]}
+              className="h-10"
+            />
+          </div>
+
+          {activeTab === 'invoices' && (
+            <div className="w-full sm:w-48 text-left">
+              <SearchableSelect
+                value={draft.paymentMethodId}
+                onChange={(val) => {
+                  setDraft(d => ({ ...d, paymentMethodId: String(val) }));
+                  setApplied(a => ({ ...a, paymentMethodId: String(val) }));
+                  setPage(1);
+                }}
+                placeholder="Semua Metode"
+                options={[
+                  { id: '', name: 'Semua Metode' },
+                  ...(Array.isArray(paymentMethods) ? paymentMethods : []).map((pm: any) => ({ id: pm.id, name: pm.name }))
+                ]}
+                className="h-10"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Advanced Filter Panel ── */}
@@ -422,12 +566,14 @@ export default function TransactionsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-separate border-spacing-0">
             <thead>
-              <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-semibold">
+              <tr className="bg-slate-50/50 text-slate-400 text-xs font-semibold">
                 <th className="px-6 py-4 border-b border-slate-100 font-normal w-12 text-center">#</th>
                 <th className="px-6 py-4 border-b border-slate-100 font-bold">Waktu &amp; Kode</th>
                 <th className="px-6 py-4 border-b border-slate-100 font-bold">Donatur</th>
                 <th className="px-6 py-4 border-b border-slate-100 font-normal">Nominal</th>
-                <th className="px-6 py-4 border-b border-slate-100 font-bold">Metode &amp; Kampanye</th>
+                {activeTab === 'invoices' && <th className="px-6 py-4 border-b border-slate-100 font-bold text-center">Metode</th>}
+                <th className="px-6 py-4 border-b border-slate-100 font-bold">{activeTab === 'invoices' ? 'Kampanye' : 'Kampanye'}</th>
+                {activeTab === 'transactions' && <th className="px-6 py-4 border-b border-slate-100 font-bold">Affiliate</th>}
                 <th className="px-6 py-4 border-b border-slate-100 text-center font-bold">Status</th>
                 <th className="px-6 py-4 border-b border-slate-100 text-center font-bold">Aksi</th>
               </tr>
@@ -436,7 +582,7 @@ export default function TransactionsPage() {
               {isLoading ? (
                 [...Array(limit)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={activeTab === 'invoices' ? 7 : 6} className="h-16 px-6 py-4" />
+                    <td colSpan={9} className="h-16 px-6 py-4" />
                   </tr>
                 ))
               ) : transactions?.length > 0 ? (
@@ -446,50 +592,66 @@ export default function TransactionsPage() {
                     onMouseEnter={() => activeTab === 'invoices' && router.prefetch(`/transactions/${trx.invoice_code}`)}
                     className="hover:bg-slate-50/50 transition-colors group"
                   >
-                    <td className="px-6 py-5 border-b border-slate-50 text-center text-xs font-normal text-slate-400 bg-slate-50/20">
+                    <td className="px-6 py-5 border-b border-slate-50 text-center text-sm font-normal text-slate-400 bg-slate-50/20">
                       {offset + idx + 1}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex flex-col text-left">
-                        <span className="text-xs font-normal text-slate-800">{trx.invoice_code}</span>
-                        <span className="text-[10px] text-slate-400 font-normal mt-1 tracking-tight">{formatDate(trx.created_at)}</span>
+                        <span className="text-sm font-normal text-slate-800">{trx.invoice_code}</span>
+                        <span className="text-xs text-slate-400 font-normal mt-1 tracking-tight">{formatDate(trx.created_at)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="font-semibold text-slate-800 text-sm text-left">{trx.donor_name_snapshot}</p>
+                      <p className="font-normal text-slate-800 text-base text-left">{trx.donor_name_snapshot}</p>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <p className="font-normal text-slate-800 text-sm tracking-tight">
+                      <p className="font-normal text-slate-800 text-base tracking-tight">
                         {activeTab === 'invoices' ? formatIDR(trx.total_amount) : formatIDR(trx.amount)}
                       </p>
                       {activeTab === 'transactions' && trx.affiliate_commission > 0 && (
-                        <p className="text-[10px] text-emerald-600 font-medium">Comm: {formatIDR(trx.affiliate_commission)}</p>
+                        <p className="text-xs text-emerald-600 font-normal">Comm: {formatIDR(trx.affiliate_commission)}</p>
                       )}
                     </td>
+                    {activeTab === 'invoices' && (
+                      <td className="px-6 py-5 text-center">
+                        {trx.payment_method_logo ? (
+                          <img 
+                            src={trx.payment_method_logo} 
+                            alt={trx.payment_method} 
+                            className="h-6 w-auto mx-auto object-contain"
+                            title={trx.payment_method}
+                          />
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-normal uppercase tracking-tighter line-clamp-1">{trx.payment_method}</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-6 py-5">
                       <div className="flex flex-col text-left">
                         {activeTab === 'invoices' ? (
-                          <>
-                            <span className="text-[10px] font-normal text-teal-600">{trx.payment_method}</span>
-                            <span className="text-xs text-slate-400 mt-1 line-clamp-1 italic">
-                              {trx.campaigns?.map((c: any) => c.title).join(', ') || 'No campaign'}
-                            </span>
-                          </>
+                          <span className="text-sm text-slate-600 mt-1 line-clamp-1 font-normal">
+                            {trx.campaigns?.map((c: any) => c.title).join(', ') || 'No campaign'}
+                          </span>
                         ) : (
-                          <>
-                            <span className="text-xs font-medium text-slate-800 line-clamp-1">{trx.campaign_title}</span>
-                            {trx.affiliate_name && (
-                              <span className="text-[10px] text-indigo-600 font-bold mt-1 uppercase tracking-wider flex items-center gap-1">
-                                <Users size={10} /> {trx.affiliate_name}
-                              </span>
-                            )}
-                          </>
+                          <span className="text-sm font-normal text-slate-800 line-clamp-1">{trx.campaign_title}</span>
                         )}
                       </div>
                     </td>
+                    {activeTab === 'transactions' && (
+                      <td className="px-6 py-5">
+                        {trx.affiliate_name ? (
+                          <div className="flex flex-col text-left">
+                            <span className="text-sm font-normal text-indigo-600">{trx.affiliate_name}</span>
+                            <span className="text-xs text-slate-400 font-mono mt-0.5">{trx.affiliate_code}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-300 font-normal">—</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-6 py-5 text-center">
                       <span className={cn(
-                        "px-2.5 py-1 rounded-full text-[10px] font-normal border shadow-sm",
+                        "px-3 py-1.5 rounded-full text-xs font-normal border shadow-sm",
                         trx.status === 'PAID'      ? "bg-teal-50 text-teal-700 border-teal-100"   :
                         trx.status === 'PENDING'   ? "bg-amber-50 text-amber-700 border-amber-100" :
                         trx.status === 'EXPIRED'   ? "bg-slate-50 text-slate-400 border-slate-100" :
@@ -498,26 +660,32 @@ export default function TransactionsPage() {
                         {trx.status === 'PAID' ? 'Lunas' : trx.status === 'PENDING' ? 'Pending' : trx.status === 'EXPIRED' ? 'Kedaluwarsa' : 'Batal'}
                       </span>
                     </td>
-                    {activeTab === 'invoices' && (
-                      <td className="px-6 py-5">
-                        <div className="flex justify-center gap-1">
-                          <button onClick={() => handleUpdateStatus(trx.id, trx.created_at, 'PAID')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Mark as Paid">
-                            <CheckCircle size={18} />
-                          </button>
-                          <button onClick={() => handleDelete(trx.id, trx.created_at)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
-                            <Trash2 size={18} />
-                          </button>
+                    <td className="px-6 py-5">
+                      <div className="flex justify-center gap-1">
+                        {activeTab === 'invoices' ? (
+                          <>
+                            <button onClick={() => handleUpdateStatus(trx.id, trx.created_at, 'PAID')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Mark as Paid">
+                              <CheckCircle size={18} />
+                            </button>
+                            <button onClick={() => handleDelete(trx.id, trx.created_at)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
+                              <Trash2 size={18} />
+                            </button>
+                            <button onClick={() => router.push(`/transactions/${trx.invoice_code}`)} className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all" title="Detail Transaksi">
+                              <Eye size={18} />
+                            </button>
+                          </>
+                        ) : (
                           <button onClick={() => router.push(`/transactions/${trx.invoice_code}`)} className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all" title="Detail Transaksi">
                             <Eye size={18} />
                           </button>
-                        </div>
-                      </td>
-                    )}
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={activeTab === 'invoices' ? 7 : 6} className="px-6 py-12 text-center text-slate-400 italic">No transactions found.</td>
+                  <td colSpan={9} className="px-6 py-12 text-center text-slate-400 italic">No transactions found.</td>
                 </tr>
               )}
             </tbody>

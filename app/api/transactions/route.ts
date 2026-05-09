@@ -18,6 +18,7 @@ export async function GET(req: Request) {
     const endDate = searchParams.get('endDate');
     const type = searchParams.get('type') || 'invoices';
     const affiliateId = searchParams.get('affiliateId');
+    const paymentMethodId = searchParams.get('paymentMethodId');
     
     if (type === 'transactions') {
       let sql = `
@@ -80,6 +81,8 @@ export async function GET(req: Request) {
         i.is_email_checkout_sent, i.is_email_paid_sent, 
         i.is_ads_sent,
         pm.name as payment_method,
+        pm.logo_url as payment_method_logo,
+        pm.id as payment_method_id,
         JSONB_AGG(DISTINCT jsonb_build_object('id', c.id, 'title', c.title)) FILTER (WHERE c.id IS NOT NULL) as campaigns,
         COUNT(*) OVER() as total_count
       FROM invoices i
@@ -106,6 +109,11 @@ export async function GET(req: Request) {
       params.push(status);
     }
 
+    if (paymentMethodId) {
+      sql += ` AND i.payment_method_id = $${params.length + 1}`;
+      params.push(paymentMethodId);
+    }
+
     if (search) {
       sql += ` AND (i.invoice_code ILIKE $${params.length + 1} OR i.donor_name_snapshot ILIKE $${params.length + 1})`;
       params.push(`%${search}%`);
@@ -130,7 +138,7 @@ export async function GET(req: Request) {
       GROUP BY 
         i.id, i.invoice_code, i.donor_name_snapshot, i.total_amount, i.status, i.created_at, i.paid_at, 
         i.is_wa_checkout_sent, i.is_wa_paid_sent, i.is_email_checkout_sent, i.is_email_paid_sent, i.is_ads_sent,
-        pm.name
+        pm.name, pm.logo_url, pm.id
       ORDER BY i.created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;

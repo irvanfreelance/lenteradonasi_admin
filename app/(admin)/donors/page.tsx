@@ -13,6 +13,8 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { formatIDR } from '@/lib/format';
 import { Pagination } from '@/components/shared/pagination';
+import * as XLSX from 'xlsx';
+import { Download } from 'lucide-react';
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -30,7 +32,7 @@ const formatDate = (dateStr: string) => {
 
 export default function DonorsPage() {
   const [search, setSearch] = useState('');
-  const [view, setView] = useState<'CARD' | 'TABLE'>('CARD');
+  const [view, setView] = useState<'CARD' | 'TABLE'>('TABLE');
   
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -81,6 +83,40 @@ export default function DonorsPage() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      toast.loading('Mempersiapkan data export...');
+      const res = await fetch(`/api/donors?limit=5000&offset=0&search=${search}`);
+      if (!res.ok) throw new Error('Gagal mengambil data export');
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        toast.error('Tidak ada data untuk diexport');
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(data.map((item: any) => ({
+        'ID': item.id,
+        'Nama Donatur': item.name,
+        'Email': item.email || '-',
+        'No. HP': item.phone || '-',
+        'Total Donasi': Number(item.total_donated),
+        'Jumlah Transaksi': Number(item.donation_count),
+        'Tanggal Bergabung': formatDate(item.created_at)
+      })));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Donors');
+      XLSX.writeFile(workbook, `Export_Donatur_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast.dismiss();
+      toast.success('Data donatur berhasil diexport');
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err.message);
+    }
+  };
+
   const handleDelete = (id: number) => {
     toast('Hapus data donatur ini?', {
       action: {
@@ -112,6 +148,12 @@ export default function DonorsPage() {
              <button onClick={() => setView('CARD')} className={cn("p-2 rounded-xl transition-all", view === 'CARD' ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50")}><LayoutGrid size={18} /></button>
              <button onClick={() => setView('TABLE')} className={cn("p-2 rounded-xl transition-all", view === 'TABLE' ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50")}><List size={18} /></button>
           </div>
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-100 rounded-xl text-sm font-normal text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <Download size={18} /> Export Excel
+          </button>
           <button 
             onClick={() => handleOpenModal()}
             className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-lg shadow-teal-500/20 active:scale-95 shrink-0"
@@ -196,42 +238,43 @@ export default function DonorsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-separate border-spacing-0">
               <thead>
-                <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-semibold">
+                <tr className="bg-slate-50/50 text-slate-400 text-xs font-medium">
                   <th className="px-6 py-4 border-b border-slate-100 font-normal w-12 text-center">#</th>
-                  <th className="px-6 py-4 border-b border-slate-100 font-bold">Donatur</th>
-                  <th className="px-6 py-4 border-b border-slate-100 font-bold">Kontak</th>
+                  <th className="px-6 py-4 border-b border-slate-100 font-normal">Donatur</th>
+                  <th className="px-6 py-4 border-b border-slate-100 font-normal">Email</th>
+                  <th className="px-6 py-4 border-b border-slate-100 font-normal">No. WhatsApp</th>
                   <th className="px-6 py-4 border-b border-slate-100 font-normal text-right">Total Donasi</th>
-                  <th className="px-6 py-4 border-b border-slate-100 font-bold">Frekuensi</th>
-                  <th className="px-6 py-4 border-b border-slate-100 text-center font-bold">Aksi</th>
+                  <th className="px-6 py-4 border-b border-slate-100 font-normal">Frekuensi</th>
+                  <th className="px-6 py-4 border-b border-slate-100 text-center font-normal">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
-                  [...Array(10)].map((_, i) => <tr key={i} className="animate-pulse"><td colSpan={6} className="h-16 px-6 py-4"></td></tr>)
+                  [...Array(10)].map((_, i) => <tr key={i} className="animate-pulse"><td colSpan={8} className="h-16 px-6 py-4"></td></tr>)
                 ) : donors?.length > 0 ? (
                   donors.map((donor: any, idx: number) => (
                     <tr key={donor.id} onMouseEnter={() => router.prefetch(`/donors/${donor.id}`)} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-5 border-b border-slate-50 text-center text-xs font-normal text-slate-400 bg-slate-50/20">
+                      <td className="px-6 py-5 border-b border-slate-50 text-center text-sm font-normal text-slate-400 bg-slate-50/20">
                         {offset + idx + 1}
                       </td>
                       <td className="px-6 py-5">
                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-normal text-[10px]">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-normal text-xs">
                                {donor.name.charAt(0)}
                             </div>
-                            <span className="font-semibold text-slate-800 text-sm">{donor.name}</span>
+                            <span className="font-normal text-slate-800 text-base">{donor.name}</span>
                          </div>
                       </td>
                       <td className="px-6 py-5 text-left">
-                        <div className="flex flex-col gap-0.5">
-                            <span className="font-semibold text-slate-800 tracking-tight text-sm">{donor.name}</span>
-                            <span className="text-[10px] text-slate-400 font-medium">{donor.email}</span>
-                        </div>
+                        <span className="text-sm text-slate-600 font-normal">{donor.email || '-'}</span>
+                      </td>
+                      <td className="px-6 py-5 text-left">
+                        <span className="text-sm text-slate-600 font-normal">{donor.phone || '-'}</span>
                       </td>
                       <td className="px-6 py-5 text-right">
-                        <span className="font-normal text-slate-800 text-sm tracking-tight">{formatIDR(donor.total_donation)}</span>
+                        <span className="font-normal text-slate-800 text-base tracking-tight">{formatIDR(donor.total_donated)}</span>
                       </td>
-                      <td className="px-6 py-5 text-left text-xs font-normal text-slate-500">
+                      <td className="px-6 py-5 text-left text-sm font-normal text-slate-500">
                         {donor.donation_count} Transaksi
                       </td>
                       <td className="px-6 py-5">
@@ -244,7 +287,7 @@ export default function DonorsPage() {
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No donors found.</td></tr>
+                  <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-400 italic">No donors found.</td></tr>
                 )}
               </tbody>
             </table>
