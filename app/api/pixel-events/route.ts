@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const parsed = pixelEventSchema.safeParse(body);
     
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
     const { screen_name, meta_event, tiktok_event, google_event, is_active } = parsed.data;
@@ -52,7 +52,7 @@ export async function PATCH(req: Request) {
     const parsed = pixelEventSchema.safeParse(body);
     
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
     
     const { id, screen_name, meta_event, tiktok_event, google_event, is_active } = parsed.data;
