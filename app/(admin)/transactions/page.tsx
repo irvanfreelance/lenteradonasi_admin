@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import useSWR from 'swr';
 import { 
   Search, Filter, Download,
-  CheckCircle, Trash2, Eye, X, Users
+  CheckCircle, Trash2, Eye, X, Users, Image as ImageIcon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { clsx, type ClassValue } from 'clsx';
@@ -57,6 +57,7 @@ export default function TransactionsPage() {
   const [activeTab, setActiveTab] = useState('invoices');
   // applied = values that actually drive the SWR query (committed on button click)
   const [applied, setApplied] = useState<Filters>({ ...DEFAULT_FILTERS });
+  const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
 
   const [page,  setPage]  = useState(1);
   const [limit, setLimit] = useState(10);
@@ -667,6 +668,11 @@ export default function TransactionsPage() {
                             <button onClick={() => handleUpdateStatus(trx.id, trx.created_at, 'PAID')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Mark as Paid">
                               <CheckCircle size={18} />
                             </button>
+                            {trx.proof_transfer && (
+                              <button onClick={() => setProofImageUrl(trx.proof_transfer)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Lihat Bukti Transfer">
+                                <ImageIcon size={18} />
+                              </button>
+                            )}
                             <button onClick={() => handleDelete(trx.id, trx.created_at)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
                               <Trash2 size={18} />
                             </button>
@@ -703,6 +709,28 @@ export default function TransactionsPage() {
           isLoading={isLoading}
         />
       </div>
+
+      {/* ── Proof of Transfer Modal ── */}
+      {proofImageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl p-4 max-w-lg w-full relative animate-in fade-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setProofImageUrl(null)}
+              className="absolute -top-12 right-0 text-white hover:text-slate-200 transition-colors bg-black/40 p-2 rounded-full"
+            >
+              <X size={24} />
+            </button>
+            <h3 className="font-bold text-lg mb-4 text-slate-800">Bukti Transfer</h3>
+            <div className="relative w-full aspect-auto min-h-[300px] flex items-center justify-center bg-slate-50 rounded-xl overflow-hidden border border-slate-100">
+              <img 
+                src={proofImageUrl} 
+                alt="Bukti Transfer" 
+                className="max-w-full max-h-[70vh] object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -44,13 +44,19 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
 
   // Tabs state
-  const [activeTab, setActiveTab] = useState<'UMUM' | 'USER'>('UMUM');
+  const [activeTab, setActiveTab] = useState<'UMUM' | 'USER' | 'PIXEL'>('UMUM');
 
   // Templates state
   const { data: templates, mutate: mutateTemplates } = useSWR('/api/notification-templates', fetcher);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [templateForm, setTemplateForm] = useState({ event_trigger: '', channel: 'WHATSAPP', message_content: '', is_active: true });
+
+  // Pixel Events State
+  const { data: pixelEvents, mutate: mutatePixelEvents, isLoading: pixelEventsLoading } = useSWR('/api/pixel-events', fetcher);
+  const [isPixelModalOpen, setIsPixelModalOpen] = useState(false);
+  const [editingPixel, setEditingPixel] = useState<any>(null);
+  const [pixelForm, setPixelForm] = useState({ screen_name: '', meta_event: '', tiktok_event: '', google_event: '', is_active: true });
 
   // ── User Management State ──────────────────────────────────────────────
   const [adminSearch, setAdminSearch] = useState('');
@@ -157,6 +163,44 @@ export default function SettingsPage() {
     });
   };
 
+  const handleOpenPixel = (p: any = null) => {
+    setEditingPixel(p);
+    setPixelForm(p ? p : { screen_name: '', meta_event: '', tiktok_event: '', google_event: '', is_active: true });
+    setIsPixelModalOpen(true);
+  };
+
+  const handleSavePixel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const method = editingPixel ? 'PATCH' : 'POST';
+      const body = editingPixel ? { id: editingPixel.id, ...pixelForm } : pixelForm;
+      const res = await fetch('/api/pixel-events', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('Failed to save pixel event');
+      toast.success('Pixel Event disimpan');
+      mutatePixelEvents();
+      setIsPixelModalOpen(false);
+    } catch (err) {
+      toast.error('Gagal menyimpan pixel event');
+    }
+  };
+
+  const handleDeletePixel = async (id: number) => {
+    toast('Hapus pixel event ini?', {
+      action: {
+        label: 'Hapus',
+        onClick: async () => {
+          await fetch(`/api/pixel-events?id=${id}`, { method: 'DELETE' });
+          toast.success('Pixel Event dihapus');
+          mutatePixelEvents();
+        }
+      }
+    });
+  };
+
   useEffect(() => {
     if (config && !configLoading) {
       setFormData({
@@ -246,6 +290,17 @@ export default function SettingsPage() {
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Manajemen User
+        </button>
+
+        <button
+          onClick={() => setActiveTab('PIXEL')}
+          className={cn(
+            "flex items-center gap-2 px-8 py-4 text-sm font-bold transition-all rounded-xl",
+            activeTab === 'PIXEL' ? "bg-rose-50 text-rose-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+          )}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-current"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+          Pixel Events
         </button>
       </div>
 
@@ -412,7 +467,7 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'USER' ? (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 animate-in fade-in duration-300">
           <div className="p-6 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-center">
             <div>
@@ -562,6 +617,148 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 animate-in fade-in duration-300">
+          <div className="p-6 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-center">
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                Manajemen Pixel Events
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">Kelola event tracking untuk Meta, TikTok, dan Google Ads</p>
+            </div>
+            <button
+              onClick={() => handleOpenPixel()}
+              className="flex items-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-indigo-200"
+            >
+              <Plus size={16} /> Tambah Event
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/50">
+                  <th className="text-left py-4 px-6 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Screen Name</th>
+                  <th className="text-left py-4 px-6 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Meta Event</th>
+                  <th className="text-left py-4 px-6 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">TikTok Event</th>
+                  <th className="text-left py-4 px-6 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Google Event</th>
+                  <th className="text-center py-4 px-6 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                  <th className="text-center py-4 px-6 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {pixelEventsLoading ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center text-sm text-slate-400 italic">Memuat data...</td>
+                  </tr>
+                ) : !pixelEvents?.length ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center text-sm text-slate-400 italic">Tidak ada event ditemukan.</td>
+                  </tr>
+                ) : (
+                  pixelEvents.map((event: any) => (
+                    <tr key={event.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="py-4 px-6 font-medium text-slate-700">{event.screen_name}</td>
+                      <td className="py-4 px-6 text-slate-600">{event.meta_event || '-'}</td>
+                      <td className="py-4 px-6 text-slate-600">{event.tiktok_event || '-'}</td>
+                      <td className="py-4 px-6 text-slate-600">{event.google_event || '-'}</td>
+                      <td className="py-4 px-6 text-center">
+                        <span className={cn(
+                          "text-[10px] font-bold px-2.5 py-1 rounded-full border inline-block",
+                          event.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'
+                        )}>
+                          {event.is_active ? 'Aktif' : 'Nonaktif'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleOpenPixel(event)}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            title="Edit"
+                          >
+                            <Edit size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePixel(event.id)}
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                            title="Hapus"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Editor Modal for Pixel Events */}
+      {isPixelModalOpen && (
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+           <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl flex flex-col animate-in zoom-in-95 duration-200">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                 <h3 className="font-bold text-slate-800">{editingPixel ? 'Edit Pixel Event' : 'Tambah Pixel Event'}</h3>
+                 <button onClick={() => setIsPixelModalOpen(false)} className="text-slate-400 hover:text-slate-800 transition-colors"><X size={20} /></button>
+              </div>
+              <form onSubmit={handleSavePixel} className="p-6 space-y-4">
+                 <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Screen Name / Trigger</label>
+                    <Input 
+                      value={pixelForm.screen_name} 
+                      onChange={(e) => setPixelForm({...pixelForm, screen_name: e.target.value})} 
+                      placeholder="e.g. page_view, purchase_success" 
+                      required 
+                    />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div>
+                      <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Meta (Facebook) Event</label>
+                      <Input 
+                        value={pixelForm.meta_event} 
+                        onChange={(e) => setPixelForm({...pixelForm, meta_event: e.target.value})} 
+                        placeholder="e.g. PageView, Purchase" 
+                      />
+                   </div>
+                   <div>
+                      <label className="text-xs font-semibold text-slate-500 mb-1.5 block">TikTok Event</label>
+                      <Input 
+                        value={pixelForm.tiktok_event} 
+                        onChange={(e) => setPixelForm({...pixelForm, tiktok_event: e.target.value})} 
+                        placeholder="e.g. ViewContent" 
+                      />
+                   </div>
+                 </div>
+                 <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Google Ads Event</label>
+                    <Input 
+                      value={pixelForm.google_event} 
+                      onChange={(e) => setPixelForm({...pixelForm, google_event: e.target.value})} 
+                      placeholder="e.g. purchase, view_item" 
+                    />
+                 </div>
+                 <div className="flex items-center gap-2 pt-2">
+                    <input 
+                      type="checkbox" 
+                      id="pixel-active" 
+                      checked={pixelForm.is_active} 
+                      onChange={(e) => setPixelForm({...pixelForm, is_active: e.target.checked})} 
+                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="pixel-active" className="text-sm text-slate-700 select-none">Aktif (Enabled)</label>
+                 </div>
+                 <div className="flex gap-2 justify-end pt-5 border-t border-slate-100">
+                    <Button type="button" variant="secondary" onClick={() => setIsPixelModalOpen(false)}>Batal</Button>
+                    <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">Simpan</Button>
+                 </div>
+              </form>
+           </div>
         </div>
       )}
 

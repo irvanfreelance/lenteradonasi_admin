@@ -58,6 +58,7 @@ CREATE TABLE "public"."invoices_y2026m05" (
     "is_email_checkout_sent" bool DEFAULT false,
     "is_email_paid_sent" bool DEFAULT false,
     "is_ads_sent" bool DEFAULT false,
+    "proof_transfer" text,
     PRIMARY KEY ("id","created_at")
 );
 
@@ -383,6 +384,7 @@ CREATE TABLE "public"."invoices" (
     "is_email_checkout_sent" bool DEFAULT false,
     "is_email_paid_sent" bool DEFAULT false,
     "is_ads_sent" bool DEFAULT false,
+    "proof_transfer" text,
     PRIMARY KEY ("id","created_at")
 );
 
@@ -423,6 +425,7 @@ CREATE TABLE "public"."invoices_y2026m10" (
     "is_email_checkout_sent" bool DEFAULT false,
     "is_email_paid_sent" bool DEFAULT false,
     "is_ads_sent" bool DEFAULT false,
+    "proof_transfer" text,
     PRIMARY KEY ("id","created_at")
 );
 
@@ -689,8 +692,8 @@ INSERT INTO "public"."payment_methods" ("id", "code", "name", "logo_url", "type"
 (15, 'PERMATA', 'Permata Virtual Account', 'https://4jgsaomzelkwriht.public.blob.vercel-storage.com/permata-0IaHmiPhtQlQLBmBp1vtp6nmfwosK2.jpg', 'va', 'Xendit', 0, 0.00, 't', 'f', 15),
 (16, 'ALFAMART', 'Alfamart', 'https://4jgsaomzelkwriht.public.blob.vercel-storage.com/alfamart-4jhk2YjGeoyKo8WEpjSrRNIB4Do5SL.png', 'retail_outlet', 'Xendit', 0, 0.00, 't', 'f', 16),
 (17, 'INDOMARET', 'Indomaret', 'https://4jgsaomzelkwriht.public.blob.vercel-storage.com/indomaret-6LTpkKX31ZqjHTVsiHwVow3jExN1ND.png', 'retail_outlet', 'Xendit', 0, 0.00, 't', 'f', 17),
-(18, 'BCA_MANUAL', 'BCA (Transfer Manual)', 'https://4jgsaomzelkwriht.public.blob.vercel-storage.com/bca9-Zi5EfD9vPgoDPwdsjIORMaXIj7mSoB.jpg', 'va', 'Manual', 0, 0.00, 't', 'f', 18),
-(19, 'MANDIRI_MANUAL', 'Mandiri (Transfer Manual)', 'https://4jgsaomzelkwriht.public.blob.vercel-storage.com/mandiri-qHIfJdlwKGHQU020btV9Yhr0iUwo4G.png', 'bank_transfer', 'Manual', 0, 0.00, 't', 'f', 19);
+(18, '0987654321|Yayasan Peduli Sesama', 'BCA (Transfer Manual)', 'https://4jgsaomzelkwriht.public.blob.vercel-storage.com/bca9-Zi5EfD9vPgoDPwdsjIORMaXIj7mSoB.jpg', 'manual_transfer', 'Manual', 0, 0.00, 't', 'f', 18),
+(19, '1234567890|Yayasan Peduli Sesama', 'Mandiri (Transfer Manual)', 'https://4jgsaomzelkwriht.public.blob.vercel-storage.com/mandiri-qHIfJdlwKGHQU020btV9Yhr0iUwo4G.png', 'manual_transfer', 'Manual', 0, 0.00, 't', 'f', 19);
 
 INSERT INTO "public"."payment_instructions" ("id", "payment_method_id", "title", "content", "sort_order", "created_at") VALUES
 (1, 2, 'Pembayaran via Mbanking', '<ol><li>Buka aplikasi BCA Mobile</li><li>Pilih m-BCA, lalu pilih m-Transfer</li><li>Masukkan nomor Virtual Account Anda, contoh: 3816523906568, lalu tekan OK</li><li>Klik tombol Kirim di pojok kanan atas untuk melanjutkan</li><li>Klik OK untuk melanjutkan</li><li>Masukkan PIN m-BCA Anda untuk otorisasi transaksi</li></ol>', 1, '2026-05-01 03:32:23.084429+00'),
@@ -1036,3 +1039,27 @@ CREATE INDEX idx_notification_logs_invoice ON public.notification_logs USING btr
 
 -- Indices
 CREATE INDEX idx_ads_conversion_logs_invoice ON public.ads_conversion_logs USING btree (invoice_code);
+
+-- Tabel pixel_events untuk mapping dinamis dari screen/halaman ke event Meta, TikTok, dan Google Ads
+CREATE TABLE IF NOT EXISTS public.pixel_events (
+    id SERIAL PRIMARY KEY,
+    screen_name VARCHAR(100) UNIQUE NOT NULL,
+    meta_event VARCHAR(100),
+    tiktok_event VARCHAR(100),
+    google_event VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert seed data default untuk pixel events
+INSERT INTO public.pixel_events (screen_name, meta_event, tiktok_event, google_event, is_active) VALUES
+('page_view', 'PageView', 'PageView', 'page_view', true),
+('checkout_amount', 'ViewContent', 'ViewContent', 'view_item', true),
+('checkout_profile', 'InitiateCheckout', 'InitiateCheckout', 'begin_checkout', true),
+('checkout_payment', 'AddPaymentInfo', 'AddPaymentInfo', 'add_payment_info', true),
+('purchase_success', 'Purchase', 'CompletePayment', 'purchase', true)
+ON CONFLICT (screen_name) DO UPDATE SET
+  meta_event = EXCLUDED.meta_event,
+  tiktok_event = EXCLUDED.tiktok_event,
+  google_event = EXCLUDED.google_event,
+  is_active = EXCLUDED.is_active;
