@@ -1,24 +1,55 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { redis, safeFlushCache } from '@/lib/redis';
+import { safeFlushCache } from '@/lib/redis';
+import { z } from 'zod';
+
+// Zod Validation Schemas
+const getTransactionsQuerySchema = z.object({
+  limit: z.coerce.number().int().nonnegative().default(10),
+  offset: z.coerce.number().int().nonnegative().default(0),
+  status: z.string().optional().nullable(),
+  search: z.string().optional().nullable(),
+  minAmount: z.string().optional().nullable(),
+  maxAmount: z.string().optional().nullable(),
+  campaignId: z.string().optional().nullable(),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+  type: z.enum(['invoices', 'transactions']).default('invoices'),
+  affiliateId: z.string().optional().nullable(),
+  paymentMethodId: z.string().optional().nullable(),
+});
+
+const patchInvoiceSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  created_at: z.string(),
+  status: z.string(),
+});
+
+const deleteInvoiceSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  created_at: z.string(),
+});
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = parseInt(searchParams.get('offset') || '0');
-    const status = searchParams.get('status');
-    const search = searchParams.get('search');
-    const minAmount = searchParams.get('minAmount');
-    const maxAmount = searchParams.get('maxAmount');
-    const campaignId = searchParams.get('campaignId');
-    
-    // Show all data by default unless filtered
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const type = searchParams.get('type') || 'invoices';
-    const affiliateId = searchParams.get('affiliateId');
-    const paymentMethodId = searchParams.get('paymentMethodId');
+    const queryParamsObj = Object.fromEntries(searchParams.entries());
+    const validated = getTransactionsQuerySchema.parse(queryParamsObj);
+
+    const {
+      limit,
+      offset,
+      status,
+      search,
+      minAmount,
+      maxAmount,
+      campaignId,
+      startDate,
+      endDate,
+      type,
+      affiliateId,
+      paymentMethodId,
+    } = validated;
     
     if (type === 'transactions') {
       let sql = `
@@ -50,8 +81,21 @@ export async function GET(req: Request) {
         params.push(status);
       }
       if (search) {
-        sql += ` AND (i.invoice_code ILIKE $${params.length + 1} OR i.donor_name_snapshot ILIKE $${params.length + 1} OR a.name ILIKE $${params.length + 1})`;
-        params.push(`%${search}%`);
+        const cleanSearch = search.replace(/[^0-9]/g, '');
+        let searchCond = `(i.invoice_code ILIKE $${params.length + 1} 
+          OR i.donor_name_snapshot ILIKE $${params.length + 1} 
+          OR a.name ILIKE $${params.length + 1}
+          OR a.affiliate_code ILIKE $${params.length + 1}
+          OR c.title ILIKE $${params.length + 1}`;
+        
+        if (cleanSearch !== '') {
+          searchCond += ` OR t.amount::text ILIKE $${params.length + 2} OR t.affiliate_commission::text ILIKE $${params.length + 2}`;
+          params.push(`%${search}%`, `%${cleanSearch}%`);
+        } else {
+          params.push(`%${search}%`);
+        }
+        searchCond += `)`;
+        sql += ` AND ${searchCond}`;
       }
       if (campaignId) {
         sql += ` AND t.campaign_id = $${params.length + 1}`;
@@ -115,8 +159,20 @@ export async function GET(req: Request) {
     }
 
     if (search) {
-      sql += ` AND (i.invoice_code ILIKE $${params.length + 1} OR i.donor_name_snapshot ILIKE $${params.length + 1})`;
-      params.push(`%${search}%`);
+      const cleanSearch = search.replace(/[^0-9]/g, '');
+      let searchCond = `(i.invoice_code ILIKE $${params.length + 1} 
+        OR i.donor_name_snapshot ILIKE $${params.length + 1}
+        OR pm.name ILIKE $${params.length + 1}
+        OR c.title ILIKE $${params.length + 1}`;
+      
+      if (cleanSearch !== '') {
+        searchCond += ` OR i.total_amount::text ILIKE $${params.length + 2}`;
+        params.push(`%${search}%`, `%${cleanSearch}%`);
+      } else {
+        params.push(`%${search}%`);
+      }
+      searchCond += `)`;
+      sql += ` AND ${searchCond}`;
     }
 
     if (minAmount) {
@@ -148,6 +204,9 @@ export async function GET(req: Request) {
     return NextResponse.json(res.rows);
   } catch (error: any) {
     console.error('API Transactions Error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ errors: error.issues }, { status: 400 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -155,11 +214,8 @@ export async function GET(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { id, created_at, status } = body;
-    
-    if (!id || !created_at || !status) {
-      return NextResponse.json({ error: 'ID, created_at, and status are required for partitioned update' }, { status: 400 });
-    }
+    const validated = patchInvoiceSchema.parse(body);
+    const { id, created_at, status } = validated;
 
     const sql = `UPDATE invoices SET status = $1 WHERE id = $2 AND created_at = $3 RETURNING *`;
     const res = await query(sql, [status, id, created_at]);
@@ -169,6 +225,9 @@ export async function PATCH(req: Request) {
     await safeFlushCache();
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ errors: error.issues }, { status: 400 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -176,18 +235,17 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    const created_at = searchParams.get('created_at');
-    
-    if (!id || !created_at) {
-      return NextResponse.json({ error: 'ID and created_at are required for partitioned delete' }, { status: 400 });
-    }
+    const queryParamsObj = Object.fromEntries(searchParams.entries());
+    const validated = deleteInvoiceSchema.parse(queryParamsObj);
+    const { id, created_at } = validated;
 
     await query('DELETE FROM invoices WHERE id = $1 AND created_at = $2', [id, created_at]);
     await safeFlushCache();
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ errors: error.issues }, { status: 400 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

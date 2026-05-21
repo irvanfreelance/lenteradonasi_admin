@@ -316,7 +316,7 @@ export default function TransactionsPage() {
               setApplied(a => ({ ...a, search: e.target.value }));
               setPage(1);
             }}
-            className="pl-10 h-10 w-full bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-indigo-500/50 transition-all"
+            className="pl-10 h-10 w-full bg-slate-50 border border-slate-100 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-indigo-500/50 transition-all"
           />
         </div>
         
